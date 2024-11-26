@@ -68,7 +68,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/geniusrabbit/adcorelib/admodels"
-	"github.com/geniusrabbit/adcorelib/adsource/openrtb/adresponse"
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/context/ctxlogger"
 	counter "github.com/geniusrabbit/adcorelib/errorcounter"
@@ -78,6 +77,8 @@ import (
 	"github.com/geniusrabbit/adcorelib/net/httpclient"
 	"github.com/geniusrabbit/adcorelib/openlatency"
 	"github.com/geniusrabbit/adcorelib/openlatency/prometheuswrapper"
+
+	"github.com/geniusrabbit/adsource-openrtb/adresponse"
 )
 
 const (

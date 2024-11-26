@@ -17,6 +17,7 @@ import (
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/billing"
 	"github.com/geniusrabbit/adcorelib/context/ctxlogger"
+	"github.com/geniusrabbit/adcorelib/price"
 )
 
 // BidResponse RTB record
@@ -56,6 +57,7 @@ func (r *BidResponse) Source() adtype.Source {
 // Prepare bid response
 func (r *BidResponse) Prepare() {
 	r.bidRespBidCount = 0
+	priceCorrectionFactor := 1. - r.Src.PriceCorrectionReduceFactor()
 
 	// Prepare URLs and markup for response
 	for i, seat := range r.BidResponse.SeatBid {
@@ -109,12 +111,11 @@ func (r *BidResponse) Prepare() {
 				RespFormat: format,
 				Bid:        bid,
 				ActionLink: bid.AdMarkup,
-				PriceScope: adtype.PriceScopeView{
-					TestViewBudget: false,
-					MaxBidPrice:    billing.MoneyFloat(bid.Price),
-					BidPrice:       billing.MoneyFloat(bid.Price),
-					ViewPrice:      billing.MoneyFloat(bid.Price),
-					ECPM:           billing.MoneyFloat(bid.Price),
+				PriceScope: price.PriceScopeView{
+					MaxBidPrice: billing.MoneyFloat(bid.Price * priceCorrectionFactor),
+					BidPrice:    billing.MoneyFloat(bid.Price * priceCorrectionFactor),
+					ViewPrice:   billing.MoneyFloat(bid.Price),
+					ECPM:        billing.MoneyFloat(bid.Price),
 				},
 			})
 			continue
@@ -138,12 +139,11 @@ func (r *BidResponse) Prepare() {
 						Bid:        bid,
 						Native:     native,
 						ActionLink: native.Link.URL,
-						PriceScope: adtype.PriceScopeView{
-							TestViewBudget: false,
-							MaxBidPrice:    billing.MoneyFloat(bid.Price),
-							BidPrice:       billing.MoneyFloat(bid.Price),
-							ViewPrice:      billing.MoneyFloat(bid.Price),
-							ECPM:           billing.MoneyFloat(bid.Price),
+						PriceScope: price.PriceScopeView{
+							MaxBidPrice: billing.MoneyFloat(bid.Price * priceCorrectionFactor),
+							BidPrice:    billing.MoneyFloat(bid.Price * priceCorrectionFactor),
+							ViewPrice:   billing.MoneyFloat(bid.Price),
+							ECPM:        billing.MoneyFloat(bid.Price),
 						},
 					}
 					if nativeRequestV2 := imp.RTBNativeRequest(); nativeRequestV2 != nil {
@@ -168,12 +168,11 @@ func (r *BidResponse) Prepare() {
 					FormatType: bannerFormatType(bid.AdMarkup),
 					RespFormat: format,
 					Bid:        bid,
-					PriceScope: adtype.PriceScopeView{
-						TestViewBudget: false,
-						MaxBidPrice:    billing.MoneyFloat(bid.Price),
-						BidPrice:       billing.MoneyFloat(bid.Price),
-						ViewPrice:      billing.MoneyFloat(bid.Price),
-						ECPM:           billing.MoneyFloat(bid.Price),
+					PriceScope: price.PriceScopeView{
+						MaxBidPrice: billing.MoneyFloat(bid.Price * priceCorrectionFactor),
+						BidPrice:    billing.MoneyFloat(bid.Price * priceCorrectionFactor),
+						ViewPrice:   billing.MoneyFloat(bid.Price),
+						ECPM:        billing.MoneyFloat(bid.Price),
 					},
 				})
 			}

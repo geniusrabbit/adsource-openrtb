@@ -4,7 +4,6 @@
   [![Go Report Card](https://goreportcard.com/badge/github.com/geniusrabbit/adsource-openrtb)](https://goreportcard.com/report/github.com/geniusrabbit/adsource-openrtb)
   [![GoDoc](https://godoc.org/github.com/geniusrabbit/adsource-openrtb?status.svg)](https://godoc.org/github.com/geniusrabbit/adsource-openrtb)
   [![Coverage Status](https://coveralls.io/repos/github/geniusrabbit/adsource-openrtb/badge.svg)](https://coveralls.io/github/geniusrabbit/adsource-openrtb)
-  [![Go Report Card](https://goreportcard.com/badge/github.com/geniusrabbit/adsource-openrtb)](https://goreportcard.com/report/github.com/geniusrabbit/adsource-openrtb)
   [![Go Reference](https://pkg.go.dev/badge/github.com/geniusrabbit/adsource-openrtb.svg)](https://pkg.go.dev/github.com/geniusrabbit/adsource-openrtb)
   [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 

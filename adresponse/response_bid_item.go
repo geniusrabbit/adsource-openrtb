@@ -18,6 +18,7 @@ import (
 	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/billing"
+	"github.com/geniusrabbit/adcorelib/price"
 )
 
 // ResponseBidItem value
@@ -38,7 +39,7 @@ type ResponseBidItem struct {
 	Native     *natresp.Response `json:"native,omitempty"`
 	ActionLink string            `json:"action_link,omitempty"`
 
-	PriceScope adtype.PriceScopeView `json:"price_scope,omitempty"`
+	PriceScope price.PriceScopeView `json:"price_scope,omitempty"`
 
 	// Competitive second AD
 	SecondAd adtype.SecondAd `json:"second_ad,omitempty"`
@@ -260,12 +261,12 @@ func (it *ResponseBidItem) ExtImpressionID() string {
 	if it.Imp == nil {
 		return ""
 	}
-	return it.Imp.ExtID
+	return it.Imp.ExternalID
 }
 
 // ExtTargetID of the external network
 func (it *ResponseBidItem) ExtTargetID() string {
-	return it.Imp.ExtTargetID
+	return it.Imp.ExternalTargetID
 }
 
 // AdID returns the advertisement ID of the system
@@ -299,10 +300,19 @@ func (it *ResponseBidItem) CampaignID() uint64 {
 	return 0
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Price calculation methods
+///////////////////////////////////////////////////////////////////////////////
+
 // PricingModel of advertisement
 // In case of RTB it can be CPM only
 func (it *ResponseBidItem) PricingModel() types.PricingModel {
 	return types.PricingModelCPM
+}
+
+// FixedPurchasePrice returns the fixed price of the action
+func (it *ResponseBidItem) FixedPurchasePrice(action admodels.Action) billing.Money {
+	return it.Imp.PurchasePrice(action)
 }
 
 // ECPM returns the effective cost per mille
@@ -315,57 +325,64 @@ func (it *ResponseBidItem) ECPM() billing.Money {
 
 // Price for specific action if supported `click`, `lead`, `view`
 // returns total price of the action
-func (it *ResponseBidItem) Price(action admodels.Action, removeFactors ...adtype.PriceFactor) billing.Money {
+func (it *ResponseBidItem) Price(action admodels.Action) billing.Money {
 	if it == nil || it.Bid == nil {
 		return 0
 	}
 	price := it.PriceScope.PricePerAction(action)
-	price += adtype.PriceFactorFromList(removeFactors...).RemoveComission(price, it)
+	// price += adtype.PriceFactorFromList(removeFactors...).RemoveComission(price, it)
 	return price
 }
 
-// InternalAuctionCPMBid value provides maximal possible price without any comission
+// InternalAuctionCPMBid value provides maximal possible price without any commission
 // According to this value the system can choice the best item for the auction
 func (it *ResponseBidItem) InternalAuctionCPMBid() billing.Money {
-	return it.AuctionCPMBid(adtype.AllPriceFactors)
+	// return it.AuctionCPMBid(adtype.AllPriceFactors)
+	return price.CalculateInternalAuctionBid(it)
 }
 
 // PurchasePrice gives the price of view from external resource.
 // The cost of this request for the system.
-func (it *ResponseBidItem) PurchasePrice(action admodels.Action, removeFactors ...adtype.PriceFactor) billing.Money {
+func (it *ResponseBidItem) PurchasePrice(action admodels.Action) billing.Money {
 	if it == nil {
 		return 0
 	}
-	// Some sources can have the fixed price of buying
-	if pPrice := it.Imp.PurchasePrice(action); pPrice > 0 {
-		return pPrice
-	}
-	if len(removeFactors) == 0 {
-		removeFactors = []adtype.PriceFactor{^adtype.TargetReducePriceFactor}
-	}
-	switch action {
-	case admodels.ActionImpression: // Equal to admodels.ActionView
-		// As we buying from some source we can consider that we will loose approximately
-		// target gate reduce factor percent, but anyway price will be higher for X% of that descepancy
-		// to protect system from overspands
-		if it.Imp.Target.PricingModel().Or(it.PricingModel()).IsCPM() {
-			return it.AuctionCPMBid(removeFactors...) / 1000 // Price per One Impression
-		}
-	case admodels.ActionClick:
-		if it.Imp.Target.PricingModel().Or(it.PricingModel()).IsCPC() {
-			return it.Price(action, removeFactors...)
-		}
-	case admodels.ActionLead:
-		if it.Imp.Target.PricingModel().Or(it.PricingModel()).IsCPA() {
-			return it.Price(action, removeFactors...)
-		}
-	}
-	return 0
+	// // Some sources can have the fixed price of buying
+	// if pPrice := it.Imp.PurchasePrice(action); pPrice > 0 {
+	// 	return pPrice
+	// }
+	// if len(removeFactors) == 0 {
+	// 	removeFactors = []adtype.PriceFactor{^adtype.TargetReducePriceFactor}
+	// }
+	// switch action {
+	// case admodels.ActionImpression: // Equal to admodels.ActionView
+	// 	// As we buying from some source we can consider that we will loose approximately
+	// 	// target gate reduce factor percent, but anyway price will be higher for X% of that descepancy
+	// 	// to protect system from overspands
+	// 	if it.Imp.Target.PricingModel().Or(it.PricingModel()).IsCPM() {
+	// 		return it.AuctionCPMBid(removeFactors...) / 1000 // Price per One Impression
+	// 	}
+	// case admodels.ActionClick:
+	// 	if it.Imp.Target.PricingModel().Or(it.PricingModel()).IsCPC() {
+	// 		return it.Price(action, removeFactors...)
+	// 	}
+	// case admodels.ActionLead:
+	// 	if it.Imp.Target.PricingModel().Or(it.PricingModel()).IsCPA() {
+	// 		return it.Price(action, removeFactors...)
+	// 	}
+	// }
+	// return 0
+	return price.CalculatePurchasePrice(it, action)
 }
 
 // PotentialPrice wich can be received from source but was marked as descrepancy
 func (it *ResponseBidItem) PotentialPrice(action admodels.Action) billing.Money {
-	return -adtype.SourcePriceFactor.RemoveComission(it.Price(action), it)
+	return price.CalculatePotentialPrice(it, action)
+}
+
+// FinalPrice for the action with all corrections and commissions
+func (it *ResponseBidItem) FinalPrice(action admodels.Action) billing.Money {
+	return price.CalculateFinalPrice(it, action)
 }
 
 // SetAuctionCPMBid value for external sources auction the system will pay
@@ -396,14 +413,40 @@ func (it *ResponseBidItem) Second() *adtype.SecondAd {
 	return &it.SecondAd
 }
 
-// RevenueShareFactor value for the publisher company
-func (it *ResponseBidItem) RevenueShareFactor() float64 {
-	return it.Imp.RevenueShareFactor()
+///////////////////////////////////////////////////////////////////////////////
+// Revenue share/comission methods
+///////////////////////////////////////////////////////////////////////////////
+
+// // RevenueShareFactor value for the publisher company
+// func (it *ResponseBidItem) RevenueShareFactor() float64 {
+// 	return it.Imp.RevenueShareFactor()
+// }
+
+// CommissionShareFactor which system get from publisher 0..1
+func (it *ResponseBidItem) CommissionShareFactor() float64 {
+	return it.Imp.CommissionShareFactor()
 }
 
-// ComissionShareFactor which system get from publisher 0..1
-func (it *ResponseBidItem) ComissionShareFactor() float64 {
-	return it.Imp.ComissionShareFactor()
+// SourceCorrectionFactor value for the source
+func (it *ResponseBidItem) SourceCorrectionFactor() float64 {
+	return it.Src.PriceCorrectionReduceFactor()
+}
+
+// TargetCorrectionFactor value for the target
+func (it *ResponseBidItem) TargetCorrectionFactor() float64 {
+	return it.Imp.Target.RevenueShareReduceFactor()
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Other methods
+///////////////////////////////////////////////////////////////////////////////
+
+// RTBCategories of the advertisement
+func (it *ResponseBidItem) RTBCategories() []string {
+	if it.Bid == nil {
+		return nil
+	}
+	return it.Bid.Cat
 }
 
 // IsDirect AD format
@@ -444,6 +487,10 @@ func (it *ResponseBidItem) Height() int {
 func (it *ResponseBidItem) Markup() (string, error) {
 	return "", nil
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Context methods
+///////////////////////////////////////////////////////////////////////////////
 
 // Context value
 func (it *ResponseBidItem) Context(ctx ...context.Context) context.Context {

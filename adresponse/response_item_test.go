@@ -10,6 +10,7 @@ import (
 	"github.com/geniusrabbit/adcorelib/admodels"
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/billing"
+	"github.com/geniusrabbit/adcorelib/price"
 )
 
 func TestItemPricing(t *testing.T) {
@@ -33,14 +34,9 @@ func TestItemPricing(t *testing.T) {
 			assert.Equal(t, billing.MoneyFloat(10.), item.Price(admodels.ActionImpression), "wrong_bid_price value")
 		})
 
-		t.Run(prefix+"_revenue_value", func(t *testing.T) {
-			rev := item.RevenueShareFactor() * item.Price(admodels.ActionImpression).Float64()
-			assert.Equal(t, float64(9), rev, "wrong_revenue value")
-		})
-
-		t.Run(prefix+"_comission_value", func(t *testing.T) {
-			com := item.ComissionShareFactor() * item.Price(admodels.ActionImpression).Float64()
-			assert.True(t, com >= 0.999 && com <= 1, "wrong_comission value")
+		t.Run(prefix+"_commission_value", func(t *testing.T) {
+			com := item.CommissionShareFactor() * item.Price(admodels.ActionImpression).Float64()
+			assert.True(t, com >= 0.999 && com <= 1, "wrong_commission value")
 		})
 
 		t.Run(prefix+"_auction_cpm_price", func(t *testing.T) {
@@ -73,12 +69,11 @@ func newRTBResponse(_ *admodels.Account, imp adtype.Impression) *ResponseBidItem
 		Imp:      &imp,
 		Bid:      &openrtb.Bid{Price: 60},
 		SecondAd: adtype.SecondAd{},
-		PriceScope: adtype.PriceScopeView{
-			TestViewBudget: false,
-			MaxBidPrice:    billing.MoneyFloat(10.),
-			BidPrice:       billing.MoneyFloat(5.),
-			ViewPrice:      billing.MoneyFloat(10.),
-			ECPM:           billing.MoneyFloat(10.),
+		PriceScope: price.PriceScopeView{
+			MaxBidPrice: billing.MoneyFloat(10.),
+			BidPrice:    billing.MoneyFloat(5.),
+			ViewPrice:   billing.MoneyFloat(10.),
+			ECPM:        billing.MoneyFloat(10.),
 		},
 	}
 }
