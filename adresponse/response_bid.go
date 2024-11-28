@@ -57,7 +57,6 @@ func (r *BidResponse) Source() adtype.Source {
 // Prepare bid response
 func (r *BidResponse) Prepare() {
 	r.bidRespBidCount = 0
-	priceCorrectionFactor := 1. - r.Src.PriceCorrectionReduceFactor()
 
 	// Prepare URLs and markup for response
 	for i, seat := range r.BidResponse.SeatBid {
@@ -92,93 +91,97 @@ func (r *BidResponse) Prepare() {
 	} // end for
 
 	for _, bid := range r.OptimalBids() {
-		imp := r.Req.ImpressionByIDvariation(bid.ImpID)
-		if imp == nil {
-			continue
+		if imp := r.Req.ImpressionByIDvariation(bid.ImpID); imp != nil {
+			if bidItem := r.prepareBidItem(bid, imp); bidItem != nil {
+				r.ads = append(r.ads, bidItem)
+			}
 		}
+	}
+}
 
-		if imp.IsDirect() {
-			format := imp.FormatByType(types.FormatDirectType)
-			if format == nil {
+func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) *ResponseBidItem {
+	var (
+		format  *types.Format
+		bidItem *ResponseBidItem
+	)
+
+	// Detect format by impression
+	if imp.IsDirect() {
+		format = imp.FormatByType(types.FormatDirectType)
+	} else {
+		for _, formatObj := range imp.Formats() {
+			if bid.ImpID != imp.IDByFormat(formatObj) {
 				continue
 			}
-			r.ads = append(r.ads, &ResponseBidItem{
+			format = formatObj
+			break
+		}
+	}
+
+	if format == nil {
+		return nil
+	}
+
+	// Prepare bid item object
+	switch {
+	case format.IsDirect():
+		bidItem = &ResponseBidItem{
+			ItemID:     imp.ID,
+			Src:        r.Src,
+			Req:        r.Req,
+			Imp:        imp,
+			Bid:        bid,
+			FormatType: types.FormatDirectType,
+			RespFormat: format,
+			ActionLink: bid.AdMarkup,
+		}
+	case format.IsNative():
+		native, err := decodeNativeMarkup([]byte(bid.AdMarkup))
+		if err == nil {
+			bidItem = &ResponseBidItem{
 				ItemID:     imp.ID,
 				Src:        r.Src,
 				Req:        r.Req,
 				Imp:        imp,
-				FormatType: types.FormatDirectType,
-				RespFormat: format,
 				Bid:        bid,
-				ActionLink: bid.AdMarkup,
-				PriceScope: price.PriceScopeView{
-					MaxBidPrice: billing.MoneyFloat(bid.Price * priceCorrectionFactor),
-					BidPrice:    billing.MoneyFloat(bid.Price * priceCorrectionFactor),
-					ViewPrice:   billing.MoneyFloat(bid.Price),
-					ECPM:        billing.MoneyFloat(bid.Price),
-				},
-			})
-			continue
+				FormatType: types.FormatNativeType,
+				RespFormat: format,
+				Native:     native,
+				ActionLink: native.Link.URL,
+				Data:       extractNativeDataFromImpression(imp, native),
+			}
+		} else {
+			ctxlogger.Get(r.Context()).Debug(
+				"Failed to decode native markup",
+				zap.String("markup", bid.AdMarkup),
+				zap.Error(err),
+			)
 		}
-
-		for _, format := range imp.Formats() {
-			if bid.ImpID != imp.IDByFormat(format) {
-				continue
-			}
-			switch {
-			case format.IsNative():
-				native, err := decodeNativeMarkup([]byte(bid.AdMarkup))
-				if err == nil {
-					bidItem := &ResponseBidItem{
-						ItemID:     imp.ID,
-						Src:        r.Src,
-						Req:        r.Req,
-						Imp:        imp,
-						FormatType: types.FormatNativeType,
-						RespFormat: format,
-						Bid:        bid,
-						Native:     native,
-						ActionLink: native.Link.URL,
-						PriceScope: price.PriceScopeView{
-							MaxBidPrice: billing.MoneyFloat(bid.Price * priceCorrectionFactor),
-							BidPrice:    billing.MoneyFloat(bid.Price * priceCorrectionFactor),
-							ViewPrice:   billing.MoneyFloat(bid.Price),
-							ECPM:        billing.MoneyFloat(bid.Price),
-						},
-					}
-					if nativeRequestV2 := imp.RTBNativeRequest(); nativeRequestV2 != nil {
-						bidItem.Data = extractNativeV2Data(nativeRequestV2, native)
-					} else if nativeRequestV3 := imp.RTBNativeRequestV3(); nativeRequestV3 != nil {
-						bidItem.Data = extractNativeV3Data(nativeRequestV3, native)
-					}
-					r.ads = append(r.ads, bidItem)
-				} else {
-					ctxlogger.Get(r.Context()).Debug(
-						"Failed to decode native markup",
-						zap.String("markup", bid.AdMarkup),
-						zap.Error(err),
-					)
-				}
-			case format.IsBanner() || format.IsProxy():
-				r.ads = append(r.ads, &ResponseBidItem{
-					ItemID:     imp.ID,
-					Src:        r.Src,
-					Req:        r.Req,
-					Imp:        imp,
-					FormatType: bannerFormatType(bid.AdMarkup),
-					RespFormat: format,
-					Bid:        bid,
-					PriceScope: price.PriceScopeView{
-						MaxBidPrice: billing.MoneyFloat(bid.Price * priceCorrectionFactor),
-						BidPrice:    billing.MoneyFloat(bid.Price * priceCorrectionFactor),
-						ViewPrice:   billing.MoneyFloat(bid.Price),
-						ECPM:        billing.MoneyFloat(bid.Price),
-					},
-				})
-			}
-			break
+	case format.IsBanner() || format.IsProxy():
+		bidItem = &ResponseBidItem{
+			ItemID:     imp.ID,
+			Src:        r.Src,
+			Req:        r.Req,
+			Imp:        imp,
+			Bid:        bid,
+			FormatType: bannerFormatType(bid.AdMarkup),
+			RespFormat: format,
 		}
 	}
+
+	if bidItem != nil {
+		// Adjust the bid price for the advertisement according to the system rules
+		bidPrice := price.CalculateNewBidPrice(billing.MoneyFloat(bid.Price/1000), bidItem)
+
+		bidItem.PriceScope = price.PriceScopeView{
+			MaxBidPrice: bidPrice,
+			BidPrice:    bidPrice,
+			ViewPrice:   billing.MoneyFloat(bid.Price / 1000),
+			ECPM:        billing.MoneyFloat(bid.Price),
+		}
+	}
+
+	return bidItem
 }
 
 // Request information
@@ -285,10 +288,7 @@ func (r *BidResponse) Release() {
 	if r == nil {
 		return
 	}
-	if r.Req != nil {
-		r.Req.Release()
-		r.Req = nil
-	}
+	r.Req = nil
 	r.ads = r.ads[:0]
 	r.optimalBids = r.optimalBids[:0]
 	r.BidResponse.SeatBid = r.BidResponse.SeatBid[:0]

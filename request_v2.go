@@ -2,7 +2,6 @@ package adsourceopenrtb
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/bsm/openrtb"
 	openrtbnreq "github.com/bsm/openrtb/native/request"
@@ -102,15 +101,15 @@ func openrtbV2ImpressionByFormat(req *adtype.BidRequest, imp *adtype.Impression,
 		Banner:            banner,
 		Video:             video,
 		Native:            native,
-		DisplayManager:    "",                                          // Name of ad mediation partner, SDK technology, etc
-		DisplayManagerVer: "",                                          // Version of the above
-		Instl:             b2i(imp.IsDirect()),                         // Interstitial, Default: 0 ("1": Interstitial, "0": Something else)
-		TagID:             tagid,                                       // IDentifier for specific ad placement or ad tag
-		BidFloor:          max(imp.BidFloor.Float64(), opts.BidFloor),  // Bid floor for this impression in CPM
-		BidFloorCurrency:  "",                                          // Currency of bid floor
-		Secure:            openrtb.NumberOrString(b2i(req.IsSecure())), // Flag to indicate whether the impression requires secure HTTPS URL creative assets and markup.
-		IFrameBuster:      nil,                                         // Array of names for supportediframe busters.
-		Pmp:               nil,                                         // A reference to the PMP object containing any Deals eligible for the impression object.
+		DisplayManager:    "",                                            // Name of ad mediation partner, SDK technology, etc
+		DisplayManagerVer: "",                                            // Version of the above
+		Instl:             b2i(imp.IsDirect()),                           // Interstitial, Default: 0 ("1": Interstitial, "0": Something else)
+		TagID:             tagid,                                         // IDentifier for specific ad placement or ad tag
+		BidFloor:          max(imp.BidFloorCPM.Float64(), opts.BidFloor), // Bid floor for this impression in CPM
+		BidFloorCurrency:  "",                                            // Currency of bid floor
+		Secure:            openrtb.NumberOrString(b2i(req.IsSecure())),   // Flag to indicate whether the impression requires secure HTTPS URL creative assets and markup.
+		IFrameBuster:      nil,                                           // Array of names for supportediframe busters.
+		Pmp:               nil,                                           // A reference to the PMP object containing any Deals eligible for the impression object.
 		Ext:               ext,
 	}
 }
@@ -146,9 +145,7 @@ func openrtbV2NativeRequest(req *adtype.BidRequest, imp *adtype.Impression, form
 
 func openrtbV2NativeAssets(_ *adtype.BidRequest, _ *adtype.Impression, format *types.Format) []openrtbnreq.Asset {
 	assets := make([]openrtbnreq.Asset, 0, len(format.Config.Assets)+len(format.Config.Fields))
-	fmt.Println("> openrtbV3NativeAssets", format.Config)
 	for _, asset := range format.Config.Assets {
-		fmt.Println("> LOG ASSET", asset)
 		if !asset.IsVideoSupport() || asset.IsImageSupport() {
 			// By default we suppose that this is image
 			var typeid openrtbnreq.ImageTypeID

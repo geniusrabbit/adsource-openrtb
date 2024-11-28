@@ -38,10 +38,6 @@ func TestItemPricing(t *testing.T) {
 			com := item.CommissionShareFactor() * item.Price(admodels.ActionImpression).Float64()
 			assert.True(t, com >= 0.999 && com <= 1, "wrong_commission value")
 		})
-
-		t.Run(prefix+"_auction_cpm_price", func(t *testing.T) {
-			assert.Equal(t, billing.MoneyFloat(5000.), item.AuctionCPMBid(), "wrong_cpm_price value")
-		})
 	}
 }
 
@@ -58,7 +54,7 @@ func TestPriceCorrection(t *testing.T) {
 	price += adtype.PriceFactorFromList(adtype.SourcePriceFactor, adtype.SystemComissionPriceFactor, adtype.TargetReducePriceFactor).
 		RemoveComission(price, item)
 	assert.True(t, price > 0 && price < billing.MoneyFloat(1.123))
-	assert.Equal(t, billing.MoneyFloat(1.123*0.85).Float64(), price.Float64())
+	assert.Equal(t, billing.MoneyFloat(1.123/1.15).Float64(), price.Float64())
 }
 
 func newRTBResponse(_ *admodels.Account, imp adtype.Impression) *ResponseBidItem {

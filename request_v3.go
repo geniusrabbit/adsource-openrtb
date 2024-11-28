@@ -101,15 +101,15 @@ func openrtbV3ImpressionByFormat(req *adtype.BidRequest, imp *adtype.Impression,
 		Banner:                banner,
 		Video:                 video,
 		Native:                native,
-		DisplayManager:        "",                                          // Name of ad mediation partner, SDK technology, etc
-		DisplayManagerVersion: "",                                          // Version of the above
-		Interstitial:          b2i(imp.IsDirect()),                         // Interstitial, Default: 0 ("1": Interstitial, "0": Something else)
-		TagID:                 tagid,                                       // IDentifier for specific ad placement or ad tag
-		BidFloor:              max(imp.BidFloor.Float64(), opts.BidFloor),  // Bid floor for this impression in CPM
-		BidFloorCurrency:      "",                                          // Currency of bid floor
-		Secure:                openrtb.NumberOrString(b2i(req.IsSecure())), // Flag to indicate whether the impression requires secure HTTPS URL creative assets and markup.
-		IFrameBusters:         nil,                                         // Array of names for supportediframe busters.
-		PMP:                   nil,                                         // A reference to the PMP object containing any Deals eligible for the impression object.
+		DisplayManager:        "",                                            // Name of ad mediation partner, SDK technology, etc
+		DisplayManagerVersion: "",                                            // Version of the above
+		Interstitial:          b2i(imp.IsDirect()),                           // Interstitial, Default: 0 ("1": Interstitial, "0": Something else)
+		TagID:                 tagid,                                         // IDentifier for specific ad placement or ad tag
+		BidFloor:              max(imp.BidFloorCPM.Float64(), opts.BidFloor), // Bid floor for this impression in CPM
+		BidFloorCurrency:      "",                                            // Currency of bid floor
+		Secure:                openrtb.NumberOrString(b2i(req.IsSecure())),   // Flag to indicate whether the impression requires secure HTTPS URL creative assets and markup.
+		IFrameBusters:         nil,                                           // Array of names for supportediframe busters.
+		PMP:                   nil,                                           // A reference to the PMP object containing any Deals eligible for the impression object.
 		Ext:                   ext,
 	}
 }
@@ -160,9 +160,10 @@ func openrtbV3NativeAssets(_ *adtype.BidRequest, _ *adtype.Impression, format *t
 					Mimes:     asset.AllowedTypes,
 				},
 			})
-		} else {
-			// TODO add video tag support
 		}
+		//  else {
+		// 	// TODO add video tag support
+		// }
 	}
 	for _, field := range format.Config.Fields {
 		if asset, ok := openrtbV3NativeFieldAsset(&field); ok {

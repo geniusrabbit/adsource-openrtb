@@ -110,3 +110,13 @@ func extractNativeV3Data(req *requestV3.Request, resp *response.Response) map[st
 	}
 	return data
 }
+
+//go:inline
+func extractNativeDataFromImpression(imp *adtype.Impression, native *response.Response) map[string]any {
+	if nativeRequestV2 := imp.RTBNativeRequest(); nativeRequestV2 != nil {
+		return extractNativeV2Data(nativeRequestV2, native)
+	} else if nativeRequestV3 := imp.RTBNativeRequestV3(); nativeRequestV3 != nil {
+		return extractNativeV3Data(nativeRequestV3, native)
+	}
+	return nil
+}

@@ -323,6 +323,9 @@ func (it *ResponseBidItem) ECPM() billing.Money {
 	return it.PriceScope.ECPM
 }
 
+// PriceTestMode returns true if the price is in test mode
+func (it *ResponseBidItem) PriceTestMode() bool { return false }
+
 // Price for specific action if supported `click`, `lead`, `view`
 // returns total price of the action
 func (it *ResponseBidItem) Price(action admodels.Action) billing.Money {
@@ -332,6 +335,20 @@ func (it *ResponseBidItem) Price(action admodels.Action) billing.Money {
 	price := it.PriceScope.PricePerAction(action)
 	// price += adtype.PriceFactorFromList(removeFactors...).RemoveComission(price, it)
 	return price
+}
+
+// BidPrice returns bid price for the external auction source.
+// The current bid price will be adjusted according to the source correction factor and the commission share factor
+func (it *ResponseBidItem) BidPrice() billing.Money {
+	return it.PriceScope.BidPrice
+}
+
+// SetBidPrice value for external sources auction the system will pay
+func (it *ResponseBidItem) SetBidPrice(bid billing.Money) error {
+	if !it.PriceScope.SetBidPrice(bid, false) {
+		return adtype.ErrNewAuctionBidIsHigherThenMaxBid
+	}
+	return nil
 }
 
 // InternalAuctionCPMBid value provides maximal possible price without any commission
@@ -396,18 +413,6 @@ func (it *ResponseBidItem) SetAuctionCPMBid(price billing.Money, includeFactors 
 	return nil
 }
 
-// AuctionCPMBid value provides price for external sources
-// The prive what we can pay for the action to the external source
-func (it *ResponseBidItem) AuctionCPMBid(removeFactors ...adtype.PriceFactor) billing.Money {
-	price := it.PriceScope.BidPrice * 1000
-
-	// Remove commissions from the price if provided
-	if len(removeFactors) > 0 {
-		price += adtype.PriceFactorFromList(removeFactors...).RemoveComission(price, it)
-	}
-	return price
-}
-
 // Second campaigns
 func (it *ResponseBidItem) Second() *adtype.SecondAd {
 	return &it.SecondAd
@@ -416,11 +421,6 @@ func (it *ResponseBidItem) Second() *adtype.SecondAd {
 ///////////////////////////////////////////////////////////////////////////////
 // Revenue share/comission methods
 ///////////////////////////////////////////////////////////////////////////////
-
-// // RevenueShareFactor value for the publisher company
-// func (it *ResponseBidItem) RevenueShareFactor() float64 {
-// 	return it.Imp.RevenueShareFactor()
-// }
 
 // CommissionShareFactor which system get from publisher 0..1
 func (it *ResponseBidItem) CommissionShareFactor() float64 {
