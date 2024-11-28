@@ -259,11 +259,6 @@ func (d *driver[ND, Rq, Rs]) ProcessResponseItem(response adtype.Responser, item
 	}
 }
 
-// RevenueShareReduceFactor which is a potential
-func (d *driver[ND, Rq, Rs]) RevenueShareReduceFactor() float64 {
-	return 1. - d.source.Account.RevenueShareFactor()
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 /// Implementation of platform.Metrics interface
 ///////////////////////////////////////////////////////////////////////////////
