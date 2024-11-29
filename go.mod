@@ -6,7 +6,7 @@ require (
 	github.com/bsm/openrtb v2.1.2+incompatible
 	github.com/bsm/openrtb/v3 v3.2.1
 	github.com/demdxx/gocast/v2 v2.9.0
-	github.com/geniusrabbit/adcorelib v0.0.0-20241129144458-8f82ce7d0030
+	github.com/geniusrabbit/adcorelib v0.0.0-20241129152524-80287e0a976e
 	github.com/geniusrabbit/udetect v0.0.0-20241125135617-1dc5a0e98da2
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0

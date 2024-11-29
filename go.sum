@@ -23,8 +23,8 @@ github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHk
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.8.0 h1:dAwr6QBTBZIkG8roQaJjGof0pp0EeF+tNV7YBP3F/8M=
 github.com/fsnotify/fsnotify v1.8.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
-github.com/geniusrabbit/adcorelib v0.0.0-20241129144458-8f82ce7d0030 h1:ClExvjZ8BRHgi+uLnXrgObZI+RQW/aIRHpv+zzB2blM=
-github.com/geniusrabbit/adcorelib v0.0.0-20241129144458-8f82ce7d0030/go.mod h1:baAmFqj3gTO/HzRXLrWyOeft/oLmDFl/U1EQUepGur4=
+github.com/geniusrabbit/adcorelib v0.0.0-20241129152524-80287e0a976e h1:fIUh0k5fS5gLXstV4ZxANQIloMtuPUm/zol4AKdVi2M=
+github.com/geniusrabbit/adcorelib v0.0.0-20241129152524-80287e0a976e/go.mod h1:baAmFqj3gTO/HzRXLrWyOeft/oLmDFl/U1EQUepGur4=
 github.com/geniusrabbit/gogeo v0.0.0-20190430153311-59b5dca35b92 h1:4zzWLdGtzQxDg6WcFpSzcfEBct6xBmGk7T26I1IlNt8=
 github.com/geniusrabbit/gogeo v0.0.0-20190430153311-59b5dca35b92/go.mod h1:z4vtbN4gpN4C/6fEN0gtAc9RBkqU94Y5SrVdk3xMplM=
 github.com/geniusrabbit/gosql/v2 v2.3.1 h1:pXipcITnQlOtpNmGL9gvbrAcNw/PXmcq2Z4hTQv8aEE=
