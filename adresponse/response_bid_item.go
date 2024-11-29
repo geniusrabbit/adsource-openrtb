@@ -454,6 +454,9 @@ func (it *ResponseBidItem) IsDirect() bool {
 	return it.Imp.IsDirect()
 }
 
+// IsBackup indicates whether the advertisement is a backup ad type.
+func (it *ResponseBidItem) IsBackup() bool { return false }
+
 // ActionURL for direct ADS
 func (it *ResponseBidItem) ActionURL() string {
 	return it.ActionLink
