@@ -157,12 +157,17 @@ func (it *ResponseBidItem) ContentFields() map[string]any {
 	return fields
 }
 
-// ViewTrackerLinks returns traking links for view action
-func (it *ResponseBidItem) ViewTrackerLinks() []string {
+// ImpressionTrackerLinks returns traking links for impression action
+func (it *ResponseBidItem) ImpressionTrackerLinks() []string {
 	if it.Native == nil {
 		return nil
 	}
 	return it.Native.ImpTrackers
+}
+
+// ViewTrackerLinks returns traking links for view action
+func (it *ResponseBidItem) ViewTrackerLinks() []string {
+	return nil
 }
 
 // ClickTrackerLinks returns third-party tracker URLs to be fired on click of the URL
