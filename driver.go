@@ -259,6 +259,11 @@ func (d *driver[ND, Rq, Rs]) ProcessResponseItem(response adtype.Responser, item
 	}
 }
 
+// Weight of the source
+func (d *driver[ND, Rq, Rs]) Weight() float64 {
+	return d.source.MinimalWeight
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// Implementation of platform.Metrics interface
 ///////////////////////////////////////////////////////////////////////////////
