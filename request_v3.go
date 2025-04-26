@@ -5,10 +5,10 @@ import (
 
 	openrtbnreq "github.com/bsm/openrtb/native/request"
 	"github.com/bsm/openrtb/v3"
-	"github.com/geniusrabbit/udetect"
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adtype"
+	"github.com/geniusrabbit/udetect"
 )
 
 func requestToRTBv3(req *adtype.BidRequest, opts ...BidRequestRTBOption) *openrtb.BidRequest {
@@ -177,7 +177,7 @@ func uopenrtbOpenrtbV3UserInfo(u *adtype.User) *openrtb.User {
 	data := make([]openrtb.Data, 0, len(u.Data))
 	for _, it := range u.Data {
 		dataItem := openrtb.Data{Name: it.Name}
-		for i := 0; i < len(it.Segment); i++ {
+		for i := range it.Segment {
 			dataItem.Segment = append(dataItem.Segment, openrtb.Segment{
 				Name:  it.Segment[i].Name,
 				Value: it.Segment[i].Value,
@@ -316,8 +316,8 @@ func uopenrtbOpenrtbV3DeviceFrom(d *udetect.Device, geo *udetect.Geo) *openrtb.D
 	return &openrtb.Device{
 		UA:           browser.UA,                                // User agent
 		Geo:          uopenrtbOpenrtbV3GeoFrom(geo),             // Location of the device assumed to be the user’s current location
-		DNT:          browser.DNT,                               // "1": Do not track
-		LMT:          browser.LMT,                               // "1": Limit Ad Tracking
+		DNT:          int(browser.DNT),                          // "1": Do not track
+		LMT:          int(browser.LMT),                          // "1": Limit Ad Tracking
 		IP:           ipV4,                                      // IPv4
 		IPv6:         geo.IPv6String(),                          // IPv6
 		DeviceType:   uopenrtbOpenrtbV3DeviceType(d.DeviceType), // The general type of d.
@@ -330,7 +330,7 @@ func uopenrtbOpenrtbV3DeviceFrom(d *udetect.Device, geo *udetect.Geo) *openrtb.D
 		Width:        d.Width,                                   // Physical width of the screen in pixels.
 		PPI:          d.PPI,                                     // Screen size as pixels per linear inch.
 		PixelRatio:   d.PxRatio,                                 // The ratio of physical pixels to device independent pixels.
-		JS:           browser.JS,                                // Javascript status ("0": Disabled, "1": Enabled)
+		JS:           int(browser.JS),                           // Javascript status ("0": Disabled, "1": Enabled)
 		GeoFetch:     0,                                         // Indicates if the geolocation API will be available to JavaScript code running in the banner,
 		FlashVersion: browser.FlashVer,                          // Flash version
 		Language:     browser.PrimaryLanguage,                   // Browser language
