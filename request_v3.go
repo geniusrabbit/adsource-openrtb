@@ -5,6 +5,7 @@ import (
 
 	openrtbnreq "github.com/bsm/openrtb/native/request"
 	"github.com/bsm/openrtb/v3"
+	"github.com/demdxx/gocast/v2"
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adtype"
@@ -65,15 +66,18 @@ func openrtbV3ImpressionByFormat(req *adtype.BidRequest, imp *adtype.Impression,
 			wm, wh = 0, 0
 		}
 		banner = &openrtb.Banner{
-			ID:           "",
-			Width:        max(w, 5),
-			Height:       max(h, 5),
-			WidthMax:     wm,
-			HeightMax:    wh,
-			WidthMin:     0,
-			HeightMin:    0,
-			Position:     openrtb.AdPosition(imp.Pos),
-			BlockedTypes: nil,
+			ID:        "",
+			Width:     max(w, 5),
+			Height:    max(h, 5),
+			WidthMax:  wm,
+			HeightMax: wh,
+			WidthMin:  0,
+			HeightMin: 0,
+			Position:  openrtb.AdPosition(imp.Pos),
+			BlockedTypes: gocast.IfThen(format.IsProxy(),
+				[]openrtb.BannerType{openrtb.BannerTypeXHTMLText, openrtb.BannerTypeXHTML},
+				[]openrtb.BannerType{openrtb.BannerTypeJS, openrtb.BannerTypeFrame},
+			), // Blocked creative types
 			BlockedAttrs: nil,
 			MIMEs:        nil,
 			TopFrame:     0,

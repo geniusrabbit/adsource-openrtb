@@ -1,5 +1,6 @@
 package adsourceopenrtb
 
+//go:inline
 func b2i(b bool) int {
 	if b {
 		return 1

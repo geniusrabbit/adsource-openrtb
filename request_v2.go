@@ -5,6 +5,7 @@ import (
 
 	"github.com/bsm/openrtb"
 	openrtbnreq "github.com/bsm/openrtb/native/request"
+	"github.com/demdxx/gocast/v2"
 	uopenrtb "github.com/geniusrabbit/udetect/openrtb"
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
@@ -22,7 +23,7 @@ func requestToRTBv2(req *adtype.BidRequest, opts ...BidRequestRTBOption) *openrt
 		Site:        uopenrtb.SiteFrom(req.SiteInfo()),
 		App:         uopenrtb.ApplicationFrom(req.AppInfo()),
 		Device:      uopenrtb.DeviceFrom(req.DeviceInfo(), req.UserInfo().Geo),
-		User:        req.UserInfo().RTBObject(),
+		User:        uopenrtbOpenrtbV2UserInfo(req.UserInfo()),
 		AuctionType: int(opt.AuctionType),            // 1 = First Price, 2 = Second Price Plus
 		TMax:        int(opt.TimeMax.Milliseconds()), // Maximum amount of time in milliseconds to submit a bid
 		WSeat:       nil,                             // Array of buyer seats allowed to bid on this auction
@@ -73,7 +74,7 @@ func openrtbV2ImpressionByFormat(req *adtype.BidRequest, imp *adtype.Impression,
 			WMin:     0,
 			HMin:     0,
 			Pos:      imp.Pos,
-			BType:    nil,
+			BType:    gocast.IfThen(format.IsProxy(), []int{1, 2}, []int{3, 4}), // Blocked creative types
 			BAttr:    nil,
 			Mimes:    nil,
 			TopFrame: 0,
@@ -260,4 +261,31 @@ func openrtbV2NativeFieldAsset(field *types.FormatField) (openrtbnreq.Asset, boo
 		}, true
 	}
 	return openrtbnreq.Asset{}, false
+}
+
+func uopenrtbOpenrtbV2UserInfo(u *adtype.User) *openrtb.User {
+	data := make([]openrtb.Data, 0, len(u.Data))
+	for _, it := range u.Data {
+		dataItem := openrtb.Data{Name: it.Name}
+		for i := range it.Segment {
+			dataItem.Segment = append(dataItem.Segment, openrtb.Segment{
+				Name:  it.Segment[i].Name,
+				Value: it.Segment[i].Value,
+			})
+		}
+		data = append(data, dataItem)
+	}
+
+	return &openrtb.User{
+		ID:         u.ID,       // Unique consumer ID of this user on the exchange
+		BuyerID:    "",         // Buyer-specific ID for the user as mapped by the exchange for the buyer. At least one of buyeruid/buyerid or id is recommended. Valid for OpenRTB 2.3.
+		BuyerUID:   "",         // Buyer-specific ID for the user as mapped by the exchange for the buyer. Same as BuyerID but valid for OpenRTB 2.2.
+		YOB:        0,          // Year of birth as a 4-digit integer.
+		Gender:     u.Gender,   // Gender ("M": male, "F" female, "O" Other)
+		Keywords:   u.Keywords, // Comma separated list of keywords, interests, or intent
+		CustomData: "",         // Optional feature to pass bidder data that was set in the exchange's cookie. The string must be in base85 cookie safe characters and be in any format. Proper JSON encoding must be used to include "escaped" quotation marks.
+		Geo:        uopenrtb.GeoFrom(u.Geo),
+		Data:       data,
+		Ext:        nil,
+	}
 }

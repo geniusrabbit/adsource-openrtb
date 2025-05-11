@@ -68,6 +68,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/geniusrabbit/adcorelib/admodels"
+	"github.com/geniusrabbit/adcorelib/adquery/bidresponse"
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/context/ctxlogger"
 	counter "github.com/geniusrabbit/adcorelib/errorcounter"
@@ -221,7 +222,7 @@ func (d *driver[ND, Rq, Rs]) Bid(request *adtype.BidRequest) (response adtype.Re
 
 	d.processHTTPReponse(resp, err)
 	if response == nil {
-		response = adtype.NewEmptyResponse(request, d, err)
+		response = bidresponse.NewEmptyResponse(request, d, err)
 	}
 	return response
 }

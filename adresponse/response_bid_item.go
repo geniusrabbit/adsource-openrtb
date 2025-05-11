@@ -316,7 +316,7 @@ func (it *ResponseBidItem) PricingModel() types.PricingModel {
 }
 
 // FixedPurchasePrice returns the fixed price of the action
-func (it *ResponseBidItem) FixedPurchasePrice(action admodels.Action) billing.Money {
+func (it *ResponseBidItem) FixedPurchasePrice(action adtype.Action) billing.Money {
 	return it.Imp.PurchasePrice(action)
 }
 
@@ -333,7 +333,7 @@ func (it *ResponseBidItem) PriceTestMode() bool { return false }
 
 // Price for specific action if supported `click`, `lead`, `view`
 // returns total price of the action
-func (it *ResponseBidItem) Price(action admodels.Action) billing.Money {
+func (it *ResponseBidItem) Price(action adtype.Action) billing.Money {
 	if it == nil || it.Bid == nil {
 		return 0
 	}
@@ -365,7 +365,7 @@ func (it *ResponseBidItem) InternalAuctionCPMBid() billing.Money {
 
 // PurchasePrice gives the price of view from external resource.
 // The cost of this request for the system.
-func (it *ResponseBidItem) PurchasePrice(action admodels.Action) billing.Money {
+func (it *ResponseBidItem) PurchasePrice(action adtype.Action) billing.Money {
 	if it == nil {
 		return 0
 	}
@@ -398,12 +398,12 @@ func (it *ResponseBidItem) PurchasePrice(action admodels.Action) billing.Money {
 }
 
 // PotentialPrice wich can be received from source but was marked as descrepancy
-func (it *ResponseBidItem) PotentialPrice(action admodels.Action) billing.Money {
+func (it *ResponseBidItem) PotentialPrice(action adtype.Action) billing.Money {
 	return price.CalculatePotentialPrice(it, action)
 }
 
 // FinalPrice for the action with all corrections and commissions
-func (it *ResponseBidItem) FinalPrice(action admodels.Action) billing.Money {
+func (it *ResponseBidItem) FinalPrice(action adtype.Action) billing.Money {
 	return price.CalculateFinalPrice(it, action)
 }
 
