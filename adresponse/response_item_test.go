@@ -41,22 +41,6 @@ func TestItemPricing(t *testing.T) {
 	}
 }
 
-func TestPriceCorrection(t *testing.T) {
-	var (
-		acc = &admodels.Account{
-			IDval:        1,
-			RevenueShare: 0.85,
-		}
-		imp  = adtype.Impression{Target: &adtype.TargetEmpty{Acc: acc}}
-		item = newRTBResponse(acc, imp)
-	)
-	price := billing.MoneyFloat(1.123)
-	price += adtype.PriceFactorFromList(adtype.SourcePriceFactor, adtype.SystemComissionPriceFactor, adtype.TargetReducePriceFactor).
-		RemoveComission(price, item)
-	assert.True(t, price > 0 && price < billing.MoneyFloat(1.123))
-	assert.Equal(t, billing.MoneyFloat(1.123/1.15).Float64(), price.Float64())
-}
-
 func newRTBResponse(_ *admodels.Account, imp adtype.Impression) *ResponseBidItem {
 	return &ResponseBidItem{
 		ItemID:   "1",
@@ -66,10 +50,10 @@ func newRTBResponse(_ *admodels.Account, imp adtype.Impression) *ResponseBidItem
 		Bid:      &openrtb.Bid{Price: 60},
 		SecondAd: adtype.SecondAd{},
 		PriceScope: price.PriceScopeView{
-			MaxBidPrice: billing.MoneyFloat(10.),
-			BidPrice:    billing.MoneyFloat(5.),
-			ViewPrice:   billing.MoneyFloat(10.),
-			ECPM:        billing.MoneyFloat(10.),
+			MaxBidViewPrice: billing.MoneyFloat(10.),
+			BidViewPrice:    billing.MoneyFloat(5.),
+			ViewPrice:       billing.MoneyFloat(10.),
+			ECPM:            billing.MoneyFloat(10.),
 		},
 	}
 }

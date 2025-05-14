@@ -202,13 +202,13 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) *
 
 	if bidItem != nil {
 		// Calculate final bid pricing based on system rules and convert to appropriate units
-		bidPrice := price.CalculateNewBidPrice(billing.MoneyFloat(bid.Price/1000), bidItem)
+		bidPrice := price.CalculateNewBidViewPrice(billing.MoneyFloat(bid.Price/1000), bidItem)
 
 		bidItem.PriceScope = price.PriceScopeView{
-			MaxBidPrice: bidPrice,
-			BidPrice:    bidPrice,
-			ViewPrice:   billing.MoneyFloat(bid.Price / 1000), // Convert from micros (CPM) to actual price
-			ECPM:        billing.MoneyFloat(bid.Price),        // Original eCPM price
+			MaxBidViewPrice: bidPrice,
+			BidViewPrice:    bidPrice,
+			ViewPrice:       billing.MoneyFloat(bid.Price / 1000), // Convert from micros (CPM) to actual price
+			ECPM:            billing.MoneyFloat(bid.Price),        // Original eCPM price
 		}
 	}
 

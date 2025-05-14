@@ -338,19 +338,18 @@ func (it *ResponseBidItem) Price(action adtype.Action) billing.Money {
 		return 0
 	}
 	price := it.PriceScope.PricePerAction(action)
-	// price += adtype.PriceFactorFromList(removeFactors...).RemoveComission(price, it)
 	return price
 }
 
-// BidPrice returns bid price for the external auction source.
+// BidViewPrice returns bid price for the external auction source.
 // The current bid price will be adjusted according to the source correction factor and the commission share factor
-func (it *ResponseBidItem) BidPrice() billing.Money {
-	return it.PriceScope.BidPrice
+func (it *ResponseBidItem) BidViewPrice() billing.Money {
+	return it.PriceScope.BidViewPrice
 }
 
-// SetBidPrice value for external sources auction the system will pay
-func (it *ResponseBidItem) SetBidPrice(bid billing.Money) error {
-	if !it.PriceScope.SetBidPrice(bid, false) {
+// SetBidViewPrice value for external sources auction the system will pay
+func (it *ResponseBidItem) SetBidViewPrice(bid billing.Money) error {
+	if !it.PriceScope.SetBidViewPrice(bid, false) {
 		return adtype.ErrNewAuctionBidIsHigherThenMaxBid
 	}
 	return nil
@@ -359,41 +358,12 @@ func (it *ResponseBidItem) SetBidPrice(bid billing.Money) error {
 // InternalAuctionCPMBid value provides maximal possible price without any commission
 // According to this value the system can choice the best item for the auction
 func (it *ResponseBidItem) InternalAuctionCPMBid() billing.Money {
-	// return it.AuctionCPMBid(adtype.AllPriceFactors)
 	return price.CalculateInternalAuctionBid(it)
 }
 
 // PurchasePrice gives the price of view from external resource.
 // The cost of this request for the system.
 func (it *ResponseBidItem) PurchasePrice(action adtype.Action) billing.Money {
-	if it == nil {
-		return 0
-	}
-	// // Some sources can have the fixed price of buying
-	// if pPrice := it.Imp.PurchasePrice(action); pPrice > 0 {
-	// 	return pPrice
-	// }
-	// if len(removeFactors) == 0 {
-	// 	removeFactors = []adtype.PriceFactor{^adtype.TargetReducePriceFactor}
-	// }
-	// switch action {
-	// case admodels.ActionImpression: // Equal to admodels.ActionView
-	// 	// As we buying from some source we can consider that we will loose approximately
-	// 	// target gate reduce factor percent, but anyway price will be higher for X% of that descepancy
-	// 	// to protect system from overspands
-	// 	if it.Imp.Target.PricingModel().Or(it.PricingModel()).IsCPM() {
-	// 		return it.AuctionCPMBid(removeFactors...) / 1000 // Price per One Impression
-	// 	}
-	// case admodels.ActionClick:
-	// 	if it.Imp.Target.PricingModel().Or(it.PricingModel()).IsCPC() {
-	// 		return it.Price(action, removeFactors...)
-	// 	}
-	// case admodels.ActionLead:
-	// 	if it.Imp.Target.PricingModel().Or(it.PricingModel()).IsCPA() {
-	// 		return it.Price(action, removeFactors...)
-	// 	}
-	// }
-	// return 0
 	return price.CalculatePurchasePrice(it, action)
 }
 
@@ -405,17 +375,6 @@ func (it *ResponseBidItem) PotentialPrice(action adtype.Action) billing.Money {
 // FinalPrice for the action with all corrections and commissions
 func (it *ResponseBidItem) FinalPrice(action adtype.Action) billing.Money {
 	return price.CalculateFinalPrice(it, action)
-}
-
-// SetAuctionCPMBid value for external sources auction the system will pay
-func (it *ResponseBidItem) SetAuctionCPMBid(price billing.Money, includeFactors ...adtype.PriceFactor) error {
-	if len(includeFactors) > 0 {
-		price += adtype.PriceFactorFromList(includeFactors...).AddComission(price, it)
-	}
-	if !it.PriceScope.SetBidPrice(price/1000, false) {
-		return adtype.ErrNewAuctionBidIsHigherThenMaxBid
-	}
-	return nil
 }
 
 // Second campaigns
