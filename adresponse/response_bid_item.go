@@ -355,6 +355,12 @@ func (it *ResponseBidItem) SetBidViewPrice(bid billing.Money) error {
 	return nil
 }
 
+// PrepareBidViewPrice prepares the price for the action
+// The price is adjusted according to the source correction factor and the commission share factor
+func (it *ResponseBidItem) PrepareBidViewPrice(price billing.Money) billing.Money {
+	return it.PriceScope.PrepareBidViewPrice(price)
+}
+
 // InternalAuctionCPMBid value provides maximal possible price without any commission
 // According to this value the system can choice the best item for the auction
 func (it *ResponseBidItem) InternalAuctionCPMBid() billing.Money {

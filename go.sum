@@ -23,10 +23,8 @@ github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHk
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
 github.com/fsnotify/fsnotify v1.9.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
-github.com/geniusrabbit/adcorelib v0.0.0-20250511144056-621ff9b8e77e h1:i0e+6TnBMUT62R6fI/jZ3iyKQPAGq0w8USQLqKmsUOw=
-github.com/geniusrabbit/adcorelib v0.0.0-20250511144056-621ff9b8e77e/go.mod h1:pDzJBFWN8iJtK0COHGSbSwiIktB+A4uH2840d7G4veU=
-github.com/geniusrabbit/adcorelib v0.0.0-20250514152307-15f00acdbc06 h1:6+DmjvVCGP4WGGEXGALyndJI7CGq7XqUF4HIRj7osCo=
-github.com/geniusrabbit/adcorelib v0.0.0-20250514152307-15f00acdbc06/go.mod h1:PTu6+fsjLt2QmuescVNQVgZ5hyDhcim9e/KPEfO+SQQ=
+github.com/geniusrabbit/adcorelib v0.0.0-20250514174315-f86ea7a545c8 h1:7iDOgLOsgSnqYc16Y0kZ8GeVgLnOanouffqG5E2L490=
+github.com/geniusrabbit/adcorelib v0.0.0-20250514174315-f86ea7a545c8/go.mod h1:ldoSqc9HQVszCTJK8CRUCKODM1d4umUddlvBuvEfTKI=
 github.com/geniusrabbit/gogeo v0.0.0-20190430153311-59b5dca35b92 h1:4zzWLdGtzQxDg6WcFpSzcfEBct6xBmGk7T26I1IlNt8=
 github.com/geniusrabbit/gogeo v0.0.0-20190430153311-59b5dca35b92/go.mod h1:z4vtbN4gpN4C/6fEN0gtAc9RBkqU94Y5SrVdk3xMplM=
 github.com/geniusrabbit/gosql/v2 v2.3.1 h1:pXipcITnQlOtpNmGL9gvbrAcNw/PXmcq2Z4hTQv8aEE=
@@ -137,8 +135,8 @@ google.golang.org/genproto/googleapis/api v0.0.0-20250512202823-5a2f75b736a9 h1:
 google.golang.org/genproto/googleapis/api v0.0.0-20250512202823-5a2f75b736a9/go.mod h1:W3S/3np0/dPWsWLi1h/UymYctGXaGBM2StwzD0y140U=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20250512202823-5a2f75b736a9 h1:IkAfh6J/yllPtpYFU0zZN1hUPYdT0ogkBT/9hMxHjvg=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20250512202823-5a2f75b736a9/go.mod h1:qQ0YXyHHx3XkvlzUtpXDkS29lDSafHMZBAZDc03LQ3A=
-google.golang.org/grpc v1.72.0 h1:S7UkcVa60b5AAQTaO6ZKamFp1zMZSU0fGDK2WZLbBnM=
-google.golang.org/grpc v1.72.0/go.mod h1:wH5Aktxcg25y1I3w7H69nHfXdOG3UiadoBtjh3izSDM=
+google.golang.org/grpc v1.72.1 h1:HR03wO6eyZ7lknl75XlxABNVLLFc2PAb6mHlYh756mA=
+google.golang.org/grpc v1.72.1/go.mod h1:wH5Aktxcg25y1I3w7H69nHfXdOG3UiadoBtjh3izSDM=
 google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1 h1:F29+wU6Ee6qgu9TddPgooOdaqsxTMunOoj8KA5yuS5A=
 google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1/go.mod h1:5KF+wpkbTSbGcR9zteSqZV6fqFOWBl4Yde8En8MryZA=
 google.golang.org/protobuf v1.36.6 h1:z1NpPI8ku2WgiWnf+t9wTPsn6eP1L7ksHUlkfLvd9xY=
