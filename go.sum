@@ -25,6 +25,8 @@ github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S
 github.com/fsnotify/fsnotify v1.9.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
 github.com/geniusrabbit/adcorelib v0.0.0-20250511144056-621ff9b8e77e h1:i0e+6TnBMUT62R6fI/jZ3iyKQPAGq0w8USQLqKmsUOw=
 github.com/geniusrabbit/adcorelib v0.0.0-20250511144056-621ff9b8e77e/go.mod h1:pDzJBFWN8iJtK0COHGSbSwiIktB+A4uH2840d7G4veU=
+github.com/geniusrabbit/adcorelib v0.0.0-20250514152307-15f00acdbc06 h1:6+DmjvVCGP4WGGEXGALyndJI7CGq7XqUF4HIRj7osCo=
+github.com/geniusrabbit/adcorelib v0.0.0-20250514152307-15f00acdbc06/go.mod h1:PTu6+fsjLt2QmuescVNQVgZ5hyDhcim9e/KPEfO+SQQ=
 github.com/geniusrabbit/gogeo v0.0.0-20190430153311-59b5dca35b92 h1:4zzWLdGtzQxDg6WcFpSzcfEBct6xBmGk7T26I1IlNt8=
 github.com/geniusrabbit/gogeo v0.0.0-20190430153311-59b5dca35b92/go.mod h1:z4vtbN4gpN4C/6fEN0gtAc9RBkqU94Y5SrVdk3xMplM=
 github.com/geniusrabbit/gosql/v2 v2.3.1 h1:pXipcITnQlOtpNmGL9gvbrAcNw/PXmcq2Z4hTQv8aEE=
