@@ -7,8 +7,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"golang.org/x/net/html/charset"
+
+	"github.com/geniusrabbit/adcorelib/admodels/types"
 )
 
 func decodePopMarkup(data []byte) (val string, err error) {

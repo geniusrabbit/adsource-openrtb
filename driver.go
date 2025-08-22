@@ -89,7 +89,7 @@ const (
 	defaultMinWeight             = 0.001
 )
 
-type driver[NetDriver httpclient.Driver[Rq, Rs], Rq httpclient.Request, Rs httpclient.Response] struct {
+type driver struct {
 	lastRequestTime uint64
 
 	// Requests RPS counter
@@ -104,12 +104,12 @@ type driver[NetDriver httpclient.Driver[Rq, Rs], Rq httpclient.Request, Rs httpc
 	headers map[string]string
 
 	// Client of HTTP requests
-	netClient NetDriver
+	netClient httpclient.Driver
 }
 
-func newDriver[ND httpclient.Driver[Rq, Rs], Rq httpclient.Request, Rs httpclient.Response](_ context.Context, source *admodels.RTBSource, netClient ND, _ ...any) (*driver[ND, Rq, Rs], error) {
+func newDriver(_ context.Context, source *admodels.RTBSource, netClient httpclient.Driver, _ ...any) (*driver, error) {
 	source.MinimalWeight = max(source.MinimalWeight, defaultMinWeight)
-	return &driver[ND, Rq, Rs]{
+	return &driver{
 		source:    source,
 		headers:   source.Headers.DataOr(nil),
 		netClient: netClient,
@@ -121,16 +121,16 @@ func newDriver[ND httpclient.Driver[Rq, Rs], Rq httpclient.Request, Rs httpclien
 }
 
 // ID of source
-func (d *driver[ND, Rq, Rs]) ID() uint64 { return d.source.ID }
+func (d *driver) ID() uint64 { return d.source.ID }
 
 // ObjectKey of source
-func (d *driver[ND, Rq, Rs]) ObjectKey() uint64 { return d.source.ID }
+func (d *driver) ObjectKey() uint64 { return d.source.ID }
 
 // Protocol of source
-func (d *driver[ND, Rq, Rs]) Protocol() string { return d.source.Protocol }
+func (d *driver) Protocol() string { return d.source.Protocol }
 
 // Test request before processing
-func (d *driver[ND, Rq, Rs]) Test(request *adtype.BidRequest) bool {
+func (d *driver) Test(request *adtype.BidRequest) bool {
 	if d.source.RPS > 0 {
 		if d.source.Options.ErrorsIgnore == 0 && !d.errorCounter.Next() {
 			d.latencyMetrics.IncSkip()
@@ -158,17 +158,17 @@ func (d *driver[ND, Rq, Rs]) Test(request *adtype.BidRequest) bool {
 // PriceCorrectionReduceFactor which is a potential
 // Returns percent from 0 to 1 for reducing of the value
 // If there is 10% of price correction, it means that 10% of the final price must be ignored
-func (d *driver[ND, Rq, Rs]) PriceCorrectionReduceFactor() float64 {
+func (d *driver) PriceCorrectionReduceFactor() float64 {
 	return d.source.PriceCorrectionReduceFactor()
 }
 
 // RequestStrategy description
-func (d *driver[ND, Rq, Rs]) RequestStrategy() adtype.RequestStrategy {
+func (d *driver) RequestStrategy() adtype.RequestStrategy {
 	return adtype.AsynchronousRequestStrategy
 }
 
 // Bid request for standart system filter
-func (d *driver[ND, Rq, Rs]) Bid(request *adtype.BidRequest) (response adtype.Responser) {
+func (d *driver) Bid(request *adtype.BidRequest) (response adtype.Responser) {
 	beginTime := fasttime.UnixTimestampNano()
 	d.rpsCurrent.Inc(1)
 	d.latencyMetrics.BeginQuery()
@@ -228,7 +228,7 @@ func (d *driver[ND, Rq, Rs]) Bid(request *adtype.BidRequest) (response adtype.Re
 }
 
 // ProcessResponseItem result or error
-func (d *driver[ND, Rq, Rs]) ProcessResponseItem(response adtype.Responser, item adtype.ResponserItem) {
+func (d *driver) ProcessResponseItem(response adtype.Responser, item adtype.ResponserItem) {
 	if response == nil || response.Error() != nil {
 		return
 	}
@@ -261,7 +261,7 @@ func (d *driver[ND, Rq, Rs]) ProcessResponseItem(response adtype.Responser, item
 }
 
 // Weight of the source
-func (d *driver[ND, Rq, Rs]) Weight() float64 {
+func (d *driver) Weight() float64 {
 	return d.source.MinimalWeight
 }
 
@@ -270,7 +270,7 @@ func (d *driver[ND, Rq, Rs]) Weight() float64 {
 ///////////////////////////////////////////////////////////////////////////////
 
 // Metrics information of the platform
-func (d *driver[ND, Rq, Rs]) Metrics() *openlatency.MetricsInfo {
+func (d *driver) Metrics() *openlatency.MetricsInfo {
 	var info openlatency.MetricsInfo
 	d.latencyMetrics.FillMetrics(&info)
 	info.ID = d.ID()
@@ -284,7 +284,7 @@ func (d *driver[ND, Rq, Rs]) Metrics() *openlatency.MetricsInfo {
 ///////////////////////////////////////////////////////////////////////////////
 
 // prepare request for RTB
-func (d *driver[ND, Rq, Rs]) request(request *adtype.BidRequest) (req Rq, err error) {
+func (d *driver) request(request *adtype.BidRequest) (req httpclient.Request, err error) {
 	var (
 		rtbRequest interface{ Validate() error }
 		bufData    bytes.Buffer
@@ -304,13 +304,13 @@ func (d *driver[ND, Rq, Rs]) request(request *adtype.BidRequest) (req Rq, err er
 	}
 
 	if err := rtbRequest.Validate(); err != nil {
-		return d.netClient.NoopRequest(),
+		return nil,
 			errors.Wrap(err, fmt.Sprintf("source[%s]: %d", d.source.Protocol, d.source.ID))
 	}
 
 	// Prepare data for request
 	if err = json.NewEncoder(&bufData).Encode(rtbRequest); err != nil {
-		return d.netClient.NoopRequest(),
+		return nil,
 			errors.Wrap(err, fmt.Sprintf("source[%s]: %d", d.source.Protocol, d.source.ID))
 	}
 
@@ -323,7 +323,7 @@ func (d *driver[ND, Rq, Rs]) request(request *adtype.BidRequest) (req Rq, err er
 	return req, nil
 }
 
-func (d *driver[ND, Rq, Rs]) unmarshal(request *adtype.BidRequest, r io.Reader) (_ *adresponse.BidResponse, err error) {
+func (d *driver) unmarshal(request *adtype.BidRequest, r io.Reader) (_ *adresponse.BidResponse, err error) {
 	var bidResp openrtb.BidResponse
 
 	switch d.source.RequestType {
@@ -402,13 +402,19 @@ func (d *driver[ND, Rq, Rs]) unmarshal(request *adtype.BidRequest, r io.Reader) 
 }
 
 // fillRequest of HTTP
-func (d *driver[ND, Rq, Rs]) fillRequest(request *adtype.BidRequest, httpReq Rq) {
+func (d *driver) fillRequest(request *adtype.BidRequest, httpReq httpclient.Request) {
 	httpReq.SetHeader("Content-Type", "application/json")
-	if d.source.Protocol == "openrtb3" {
-		httpReq.SetHeader(headerRequestOpenRTBVersion, headerRequestOpenRTBVersion3)
-	} else {
-		httpReq.SetHeader(headerRequestOpenRTBVersion, headerRequestOpenRTBVersion2)
+
+	// Set OpenRTB version
+	if _, ok := d.headers[headerRequestOpenRTBVersion]; !ok {
+		if d.source.Protocol == "openrtb3" {
+			httpReq.SetHeader(headerRequestOpenRTBVersion, headerRequestOpenRTBVersion3)
+		} else {
+			httpReq.SetHeader(headerRequestOpenRTBVersion, headerRequestOpenRTBVersion2)
+		}
 	}
+
+	// Set request timemark for latency tracking
 	httpReq.SetHeader(openlatency.HTTPHeaderRequestTimemark,
 		strconv.FormatInt(openlatency.RequestInitTime(request.Time()), 10))
 
@@ -419,21 +425,25 @@ func (d *driver[ND, Rq, Rs]) fillRequest(request *adtype.BidRequest, httpReq Rq)
 }
 
 // @link https://golang.org/src/net/http/status.go
-func (d *driver[ND, Rq, Rs]) processHTTPReponse(resp Rs, err error) {
+func (d *driver) processHTTPReponse(resp httpclient.Response, err error) {
 	switch {
-	case err != nil || resp.IsNoop() ||
+	case err != nil || resp == nil ||
 		(resp.StatusCode() != http.StatusOK && resp.StatusCode() != http.StatusNoContent):
 		if errors.Is(err, http.ErrHandlerTimeout) {
 			d.latencyMetrics.IncTimeout()
 		}
 		d.errorCounter.Inc()
-		d.latencyMetrics.IncError(openlatency.MetricErrorHTTP, http.StatusText(resp.StatusCode()))
+		if resp == nil {
+			d.latencyMetrics.IncError(openlatency.MetricErrorHTTP, "")
+		} else {
+			d.latencyMetrics.IncError(openlatency.MetricErrorHTTP, http.StatusText(resp.StatusCode()))
+		}
 	default:
 		d.errorCounter.Dec()
 	}
 }
 
-func (d *driver[ND, Rq, Rs]) getRequestOptions() []BidRequestRTBOption {
+func (d *driver) getRequestOptions() []BidRequestRTBOption {
 	return []BidRequestRTBOption{
 		WithRTBOpenNativeVersion("1.1"),
 		WithFormatFilter(d.source.TestFormat),

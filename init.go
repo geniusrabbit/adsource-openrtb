@@ -52,19 +52,19 @@ const (
 	defaultTimeout = 150 * time.Millisecond
 )
 
-type NewClientFnk[NetDriver httpclient.Driver[Rq, Rs], Rq httpclient.Request, Rs httpclient.Response] func(context.Context, time.Duration) (NetDriver, error)
+type NewClientFnk func(context.Context, time.Duration) (httpclient.Driver, error)
 
-type factory[NetDriver httpclient.Driver[Rq, Rs], Rq httpclient.Request, Rs httpclient.Response] struct {
-	newClientFnk NewClientFnk[NetDriver, Rq, Rs]
+type factory struct {
+	newClientFnk NewClientFnk
 }
 
-func NewFactory[ND httpclient.Driver[Rq, Rs], Rq httpclient.Request, Rs httpclient.Response](newClient NewClientFnk[ND, Rq, Rs]) *factory[ND, Rq, Rs] {
-	return &factory[ND, Rq, Rs]{
+func NewFactory(newClient NewClientFnk) *factory {
+	return &factory{
 		newClientFnk: newClient,
 	}
 }
 
-func (fc *factory[ND, Rq, Rs]) New(ctx context.Context, source *admodels.RTBSource, opts ...any) (adtype.SourceTester, error) {
+func (fc *factory) New(ctx context.Context, source *admodels.RTBSource, opts ...any) (adtype.SourceTester, error) {
 	ncli, err := fc.newClientFnk(ctx, gocast.IfThen(
 		source.Timeout > 0,
 		time.Duration(source.Timeout)*time.Millisecond,
@@ -80,7 +80,7 @@ func (fc *factory[ND, Rq, Rs]) New(ctx context.Context, source *admodels.RTBSour
 	return dr, nil
 }
 
-func (*factory[ND, Rq, Rs]) Info() info.Platform {
+func (*factory) Info() info.Platform {
 	return info.Platform{
 		Name:        "OpenRTB",
 		Protocol:    protocol,
@@ -122,6 +122,6 @@ func (*factory[ND, Rq, Rs]) Info() info.Platform {
 	}
 }
 
-func (*factory[ND, Rq, Rs]) Protocols() []string {
+func (*factory) Protocols() []string {
 	return []string{"openrtb", "openrtb2", "openrtb3"}
 }
