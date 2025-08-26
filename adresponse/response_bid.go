@@ -19,6 +19,7 @@ package adresponse
 import (
 	"context"
 	"fmt"
+	"iter"
 	"strings"
 
 	openrtb "github.com/bsm/openrtb"
@@ -226,6 +227,29 @@ func (r *BidResponse) Request() *adtype.BidRequest {
 // Ads returns the list of processed ad items derived from the bid response.
 func (r *BidResponse) Ads() []adtype.ResponserItemCommon {
 	return r.ads
+}
+
+// IterAds returns an iterator over the ad items in the response.
+func (r *BidResponse) IterAds() iter.Seq[adtype.ResponserItem] {
+	return func(yield func(adtype.ResponserItem) bool) {
+		for _, it := range r.ads {
+			switch itV := it.(type) {
+			case nil:
+			case adtype.ResponserItem:
+				if !yield(itV) {
+					return
+				}
+			case adtype.ResponserMultipleItem:
+				for _, mit := range itV.Ads() {
+					if !yield(mit) {
+						return
+					}
+				}
+			default:
+				// do nothing
+			}
+		}
+	}
 }
 
 // Item returns a specific ad item by impression ID.
