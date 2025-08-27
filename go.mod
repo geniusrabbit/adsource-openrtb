@@ -6,10 +6,10 @@ require (
 	github.com/bsm/openrtb v2.1.2+incompatible
 	github.com/bsm/openrtb/v3 v3.2.1
 	github.com/demdxx/gocast/v2 v2.10.2
-	github.com/geniusrabbit/adcorelib v0.0.0-20250822114457-5a53351d20e5
+	github.com/geniusrabbit/adcorelib v0.0.0-20250826134505-d9679a9a9b02
 	github.com/geniusrabbit/udetect v0.0.0-20250511143927-35a146c11d35
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.43.0
 )
@@ -49,8 +49,8 @@ require (
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250818200422-3122310a409c // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250818200422-3122310a409c // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250826171959-ef028d996bc1 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250826171959-ef028d996bc1 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
@@ -59,4 +59,4 @@ require (
 	gorm.io/gorm v1.30.1 // indirect
 )
 
-replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20250818200422-3122310a409c
+replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20250826171959-ef028d996bc1
