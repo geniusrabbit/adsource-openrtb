@@ -1,6 +1,7 @@
 package adresponse
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -31,12 +32,17 @@ func TestItemPricing(t *testing.T) {
 		})
 
 		t.Run(prefix+"_bid_price", func(t *testing.T) {
-			assert.Equal(t, billing.MoneyFloat(10.), item.Price(adtype.ActionImpression), "wrong_bid_price value")
+			assert.Equal(t, billing.MoneyFloat(10.), item.Price(adtype.ActionView), "wrong_bid_price value")
 		})
 
 		t.Run(prefix+"_commission_value", func(t *testing.T) {
-			com := item.CommissionShareFactor() * item.Price(adtype.ActionImpression).Float64()
+			com := item.CommissionShareFactor() * item.Price(adtype.ActionView).Float64()
 			assert.True(t, com >= 0.999 && com <= 1, "wrong_commission value")
+		})
+
+		t.Run(prefix+"_purchase_value", func(t *testing.T) {
+			fmt.Println(">>> item.PurchasePrice(adtype.ActionView)", item.PurchasePrice(adtype.ActionView))
+			assert.Equal(t, billing.MoneyFloat(0.), item.PurchasePrice(adtype.ActionView), "wrong_purchase_price value")
 		})
 	}
 }
@@ -51,7 +57,7 @@ func newRTBResponse(_ *admodels.Account, imp adtype.Impression) *ResponseBidItem
 		SecondAd: adtype.SecondAd{},
 		PriceScope: price.PriceScopeView{
 			MaxBidViewPrice: billing.MoneyFloat(10.),
-			BidViewPrice:    billing.MoneyFloat(5.),
+			BidViewPrice:    0,
 			ViewPrice:       billing.MoneyFloat(10.),
 			ECPM:            billing.MoneyFloat(10.),
 		},

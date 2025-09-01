@@ -6,7 +6,7 @@ require (
 	github.com/bsm/openrtb v2.1.2+incompatible
 	github.com/bsm/openrtb/v3 v3.2.1
 	github.com/demdxx/gocast/v2 v2.10.2
-	github.com/geniusrabbit/adcorelib v0.0.0-20250826134505-d9679a9a9b02
+	github.com/geniusrabbit/adcorelib v0.0.0-20250901123704-2307db0305cf
 	github.com/geniusrabbit/udetect v0.0.0-20250511143927-35a146c11d35
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
@@ -56,7 +56,7 @@ require (
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/gorm v1.30.1 // indirect
+	gorm.io/gorm v1.30.2 // indirect
 )
 
 replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20250826171959-ef028d996bc1
