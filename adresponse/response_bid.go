@@ -202,18 +202,18 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) *
 	}
 
 	if bidItem != nil {
-		bidPrice := billing.MoneyFloat(bid.Price / 1000)
+		cpmPrice := billing.MoneyFloat(bid.Price)
 
 		// Set the bid item properties
-		bidItem.PriceScope = price.PriceScopeView{
-			MaxBidViewPrice: 0,
-			BidViewPrice:    0,
-			ViewPrice:       bidPrice,                      // Convert from micros (CPM) to actual price
-			ECPM:            billing.MoneyFloat(bid.Price), // Original eCPM price
+		bidItem.PriceScope = price.PriceScopeImpression{
+			MaxBidImpPrice: 0,
+			BidImpPrice:    0,
+			ImpPrice:       cpmPrice / 1000, // Convert from micros (CPM) to actual price
+			ECPM:           cpmPrice,        // Original eCPM price
 		}
 
-		// Set the bid view price based on the bid price and impression
-		bidItem.PriceScope.MaxBidViewPrice = price.CalculatePurchasePrice(bidItem, adtype.ActionView)
+		// Set the bid impression price based on the bid price and impression
+		bidItem.PriceScope.MaxBidImpPrice = price.CalculatePurchasePrice(bidItem, adtype.ActionImpression)
 	}
 
 	return bidItem

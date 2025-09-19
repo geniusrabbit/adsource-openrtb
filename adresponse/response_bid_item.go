@@ -39,7 +39,7 @@ type ResponseBidItem struct {
 	Native     *natresp.Response `json:"native,omitempty"`
 	ActionLink string            `json:"action_link,omitempty"`
 
-	PriceScope price.PriceScopeView `json:"price_scope,omitempty"`
+	PriceScope price.PriceScopeImpression `json:"price_scope,omitempty"`
 
 	// Competitive second AD
 	SecondAd adtype.SecondAd `json:"second_ad,omitempty"`
@@ -66,8 +66,7 @@ func (it *ResponseBidItem) NetworkName() string {
 
 // ContentItemString from the ad
 func (it *ResponseBidItem) ContentItemString(name string) string {
-	val := it.ContentItem(name)
-	if val != nil {
+	if val := it.ContentItem(name); val != nil {
 		return gocast.Str(val)
 	}
 	return ""
@@ -343,22 +342,22 @@ func (it *ResponseBidItem) Price(action adtype.Action) billing.Money {
 
 // BidViewPrice returns bid price for the external auction source.
 // The current bid price will be adjusted according to the source correction factor and the commission share factor
-func (it *ResponseBidItem) BidViewPrice() billing.Money {
-	return it.PriceScope.BidViewPrice
+func (it *ResponseBidItem) BidImpressionPrice() billing.Money {
+	return it.PriceScope.BidImpPrice
 }
 
-// SetBidViewPrice value for external sources auction the system will pay
-func (it *ResponseBidItem) SetBidViewPrice(bid billing.Money) error {
-	if !it.PriceScope.SetBidViewPrice(bid, false) {
+// SetBidImpressionPrice value for external sources auction the system will pay
+func (it *ResponseBidItem) SetBidImpressionPrice(bid billing.Money) error {
+	if !it.PriceScope.SetBidImpressionPrice(bid, false) {
 		return adtype.ErrNewAuctionBidIsHigherThenMaxBid
 	}
 	return nil
 }
 
-// PrepareBidViewPrice prepares the price for the action
+// PrepareBidImpressionPrice prepares the price for the action
 // The price is adjusted according to the source correction factor and the commission share factor
-func (it *ResponseBidItem) PrepareBidViewPrice(price billing.Money) billing.Money {
-	return it.PriceScope.PrepareBidViewPrice(price)
+func (it *ResponseBidItem) PrepareBidImpressionPrice(price billing.Money) billing.Money {
+	return it.PriceScope.PrepareBidImpressionPrice(price)
 }
 
 // InternalAuctionCPMBid value provides maximal possible price without any commission

@@ -63,13 +63,18 @@ func openrtbNativeLabelNameByType(dataTypeID int) string {
 	return ""
 }
 
+// extractNativeV2Data extracts native ad data from OpenRTB Native v1.x/v2.x request and response.
+// It maps asset IDs from the response to the request, using the asset type to determine the field name.
 func extractNativeV2Data(req *request.Request, resp *response.Response) map[string]any {
 	data := map[string]any{}
-	data[adtype.ContentItemLink] = resp.Link.URL
+	data[adtype.ContentItemLink] = resp.Link.URL // Add the main link
+
 	for _, asset := range resp.Assets {
 		if asset.Title != nil {
+			// Title asset
 			data[types.FormatFieldTitle] = asset.Title.Text
 		} else if asset.Data != nil {
+			// Data asset: find matching asset in request to determine field name
 			for _, ass := range req.Assets {
 				if ass.ID == asset.ID && ass.Data != nil {
 					name := openrtbNativeLabelNameByType(int(ass.Data.TypeID))
@@ -87,13 +92,18 @@ func extractNativeV2Data(req *request.Request, resp *response.Response) map[stri
 	return data
 }
 
+// extractNativeV3Data extracts native ad data from OpenRTB Native v3.x request and v1.x/v2.x response.
+// It maps asset IDs from the response to the request, using the asset type to determine the field name.
 func extractNativeV3Data(req *requestV3.Request, resp *response.Response) map[string]any {
 	data := map[string]any{}
-	data[adtype.ContentItemLink] = resp.Link.URL
+	data[adtype.ContentItemLink] = resp.Link.URL // Add the main link
+
 	for _, asset := range resp.Assets {
 		if asset.Title != nil {
+			// Title asset
 			data[types.FormatFieldTitle] = asset.Title.Text
 		} else if asset.Data != nil {
+			// Data asset: find matching asset in request to determine field name
 			for _, ass := range req.Assets {
 				if ass.ID == asset.ID && ass.Data != nil {
 					name := openrtbNativeLabelNameByType(int(ass.Data.TypeID))
