@@ -12,13 +12,13 @@ import (
 	"github.com/geniusrabbit/adcorelib/adtype"
 )
 
-func requestToRTBv2(req *adtype.BidRequest, opts ...BidRequestRTBOption) *openrtb.BidRequest {
+func requestToRTBv2(req adtype.BidRequester, opts ...BidRequestRTBOption) *openrtb.BidRequest {
 	var opt BidRequestRTBOptions
 	for _, fn := range opts {
 		fn(&opt)
 	}
 	return &openrtb.BidRequest{
-		ID:          req.ID,
+		ID:          req.ID(),
 		Imp:         openrtbV2Impressions(req, &opt),
 		Site:        uopenrtb.SiteFrom(req.SiteInfo()),
 		App:         uopenrtb.ApplicationFrom(req.AppInfo()),
@@ -36,10 +36,10 @@ func requestToRTBv2(req *adtype.BidRequest, opts ...BidRequestRTBOption) *openrt
 	}
 }
 
-func openrtbV2Impressions(req *adtype.BidRequest, opts *BidRequestRTBOptions) (list []openrtb.Impression) {
-	for _, imp := range req.Imps {
+func openrtbV2Impressions(req adtype.BidRequester, opts *BidRequestRTBOptions) (list []openrtb.Impression) {
+	for _, imp := range req.Impressions() {
 		for _, format := range imp.Formats() {
-			if openRTBImp := openrtbV2ImpressionByFormat(req, &imp, format, opts); openRTBImp != nil {
+			if openRTBImp := openrtbV2ImpressionByFormat(req, imp, format, opts); openRTBImp != nil {
 				list = append(list, *openRTBImp)
 			}
 		}
@@ -47,7 +47,7 @@ func openrtbV2Impressions(req *adtype.BidRequest, opts *BidRequestRTBOptions) (l
 	return list
 }
 
-func openrtbV2ImpressionByFormat(req *adtype.BidRequest, imp *adtype.Impression, format *types.Format, opts *BidRequestRTBOptions) *openrtb.Impression {
+func openrtbV2ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression, format *types.Format, opts *BidRequestRTBOptions) *openrtb.Impression {
 	var (
 		banner *openrtb.Banner
 		video  *openrtb.Video
@@ -115,7 +115,7 @@ func openrtbV2ImpressionByFormat(req *adtype.BidRequest, imp *adtype.Impression,
 	}
 }
 
-func openrtbV2NativeRequest(req *adtype.BidRequest, imp *adtype.Impression, format *types.Format, opts *BidRequestRTBOptions) openrtb.Extension {
+func openrtbV2NativeRequest(req adtype.BidRequester, imp *adtype.Impression, format *types.Format, opts *BidRequestRTBOptions) openrtb.Extension {
 	var (
 		nativePrepared []byte
 		native         *openrtbnreq.Request
@@ -144,7 +144,7 @@ func openrtbV2NativeRequest(req *adtype.BidRequest, imp *adtype.Impression, form
 	return openrtb.Extension(nativePrepared)
 }
 
-func openrtbV2NativeAssets(_ *adtype.BidRequest, _ *adtype.Impression, format *types.Format) []openrtbnreq.Asset {
+func openrtbV2NativeAssets(req adtype.BidRequester, imp *adtype.Impression, format *types.Format) []openrtbnreq.Asset {
 	assets := make([]openrtbnreq.Asset, 0, len(format.Config.Assets)+len(format.Config.Fields))
 	for _, asset := range format.Config.Assets {
 		if !asset.IsVideoSupport() || asset.IsImageSupport() {

@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	openrtb "github.com/bsm/openrtb"
+	"github.com/demdxx/xtypes"
 	"go.uber.org/zap"
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
@@ -38,7 +39,7 @@ type BidResponse struct {
 	context context.Context
 
 	// Request and source information
-	Req *adtype.BidRequest
+	Req adtype.BidRequester
 	Src adtype.Source
 
 	// BidResponse RTB record
@@ -47,7 +48,7 @@ type BidResponse struct {
 	bidRespBidCount int
 
 	optimalBids []*openrtb.Bid
-	ads         []adtype.ResponserItemCommon
+	ads         []adtype.ResponseItemCommon
 
 	// TODO: add errors list
 }
@@ -61,7 +62,7 @@ func (r *BidResponse) AuctionID() string {
 // AuctionType returns the auction type from the original bid request.
 // This determines whether the auction is first-price, second-price, etc.
 func (r *BidResponse) AuctionType() types.AuctionType {
-	return r.Req.AuctionType
+	return r.Req.AuctionType()
 }
 
 // Source returns the source of the bid response (e.g., which demand partner or exchange).
@@ -81,7 +82,9 @@ func (r *BidResponse) Prepare() {
 	// Prepare URLs and markup for response
 	for i, seat := range r.BidResponse.SeatBid {
 		for i, bid := range seat.Bid {
-			if imp := r.Req.ImpressionByIDvariation(bid.ImpID); imp != nil {
+			imp := xtypes.Slice[*adtype.Impression](r.Req.Impressions()).FirstOr(nil,
+				func(imp **adtype.Impression) bool { return strings.HasPrefix((*imp).ID, bid.ImpID) })
+			if imp != nil {
 				// Set default dimensions from impression if not present in bid
 				if bid.W == 0 && bid.H == 0 {
 					bid.W, bid.H = imp.Width, imp.Height
@@ -114,7 +117,9 @@ func (r *BidResponse) Prepare() {
 
 	// Create response ad items from the optimal bids for each impression
 	for _, bid := range r.OptimalBids() {
-		if imp := r.Req.ImpressionByIDvariation(bid.ImpID); imp != nil {
+		imp := xtypes.Slice[*adtype.Impression](r.Req.Impressions()).FirstOr(nil,
+			func(imp **adtype.Impression) bool { return strings.HasPrefix((*imp).ID, bid.ImpID) })
+		if imp != nil {
 			if bidItem := r.prepareBidItem(bid, imp); bidItem != nil {
 				r.ads = append(r.ads, bidItem)
 			}
@@ -220,26 +225,26 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) *
 }
 
 // Request returns the original bid request associated with this response.
-func (r *BidResponse) Request() *adtype.BidRequest {
+func (r *BidResponse) Request() adtype.BidRequester {
 	return r.Req
 }
 
 // Ads returns the list of processed ad items derived from the bid response.
-func (r *BidResponse) Ads() []adtype.ResponserItemCommon {
+func (r *BidResponse) Ads() []adtype.ResponseItemCommon {
 	return r.ads
 }
 
 // IterAds returns an iterator over the ad items in the response.
-func (r *BidResponse) IterAds() iter.Seq[adtype.ResponserItem] {
-	return func(yield func(adtype.ResponserItem) bool) {
+func (r *BidResponse) IterAds() iter.Seq[adtype.ResponseItem] {
+	return func(yield func(adtype.ResponseItem) bool) {
 		for _, it := range r.ads {
 			switch itV := it.(type) {
 			case nil:
-			case adtype.ResponserItem:
+			case adtype.ResponseItem:
 				if !yield(itV) {
 					return
 				}
-			case adtype.ResponserMultipleItem:
+			case adtype.ResponseMultipleItem:
 				for _, mit := range itV.Ads() {
 					if !yield(mit) {
 						return
@@ -254,7 +259,7 @@ func (r *BidResponse) IterAds() iter.Seq[adtype.ResponserItem] {
 
 // Item returns a specific ad item by impression ID.
 // Returns nil if no matching item is found.
-func (r *BidResponse) Item(impid string) adtype.ResponserItemCommon {
+func (r *BidResponse) Item(impid string) adtype.ResponseItemCommon {
 	for _, it := range r.Ads() {
 		if it.ImpressionID() == impid {
 			return it
@@ -326,7 +331,7 @@ func (r *BidResponse) Context(ctx ...context.Context) context.Context {
 		r.context = ctx[0]
 	}
 	if r.context == nil {
-		return r.Req.Ctx
+		return r.Req.Context()
 	}
 	return r.context
 }
@@ -368,5 +373,5 @@ func (r *BidResponse) Release() {
 
 var (
 	// Verify BidResponse implements the adtype.Responser interface
-	_ adtype.Responser = &BidResponse{}
+	_ adtype.Response = &BidResponse{}
 )

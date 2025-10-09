@@ -25,7 +25,7 @@
 //   }
 //
 // Sending a Bid Request:
-//   request := &adtype.BidRequest{ /* initialize bid request */ }
+//   request := &bidrequest.BidRequest{ /* initialize bid request */ }
 //   if driver.Test(request) {
 //       response := driver.Bid(request)
 //       // process response
@@ -130,7 +130,7 @@ func (d *driver) ObjectKey() uint64 { return d.source.ID }
 func (d *driver) Protocol() string { return d.source.Protocol }
 
 // Test request before processing
-func (d *driver) Test(request *adtype.BidRequest) bool {
+func (d *driver) Test(request adtype.BidRequester) bool {
 	if d.source.RPS > 0 {
 		if d.source.Options.ErrorsIgnore == 0 && !d.errorCounter.Next() {
 			d.latencyMetrics.IncSkip()
@@ -168,7 +168,7 @@ func (d *driver) RequestStrategy() adtype.RequestStrategy {
 }
 
 // Bid request for standart system filter
-func (d *driver) Bid(request *adtype.BidRequest) (response adtype.Responser) {
+func (d *driver) Bid(request adtype.BidRequester) (response adtype.Response) {
 	beginTime := fasttime.UnixTimestampNano()
 	d.rpsCurrent.Inc(1)
 	d.latencyMetrics.BeginQuery()
@@ -183,13 +183,13 @@ func (d *driver) Bid(request *adtype.BidRequest) (response adtype.Responser) {
 
 	if err != nil {
 		d.processHTTPReponse(resp, err)
-		ctxlogger.Get(request.Ctx).Debug("bid",
+		ctxlogger.Get(request.Context()).Debug("bid",
 			zap.String("source_url", d.source.URL),
 			zap.Error(err))
 		return adtype.NewErrorResponse(request, err)
 	}
 
-	ctxlogger.Get(request.Ctx).Debug("bid",
+	ctxlogger.Get(request.Context()).Debug("bid",
 		zap.String("source_url", d.source.URL),
 		zap.String("http_response_status_txt", http.StatusText(resp.StatusCode())),
 		zap.Int("http_response_status", resp.StatusCode()))
@@ -207,7 +207,7 @@ func (d *driver) Bid(request *adtype.BidRequest) (response adtype.Responser) {
 	defer resp.Close()
 	if res, err := d.unmarshal(request, resp.Body()); d.source.Options.Trace != 0 && err != nil {
 		response = adtype.NewErrorResponse(request, err)
-		ctxlogger.Get(request.Ctx).Error("bid response", zap.Error(err))
+		ctxlogger.Get(request.Context()).Error("bid response", zap.Error(err))
 	} else if res != nil {
 		response = res
 	}
@@ -228,7 +228,7 @@ func (d *driver) Bid(request *adtype.BidRequest) (response adtype.Responser) {
 }
 
 // ProcessResponseItem result or error
-func (d *driver) ProcessResponseItem(response adtype.Responser, item adtype.ResponserItem) {
+func (d *driver) ProcessResponseItem(response adtype.Response, item adtype.ResponseItem) {
 	if response == nil || response.Error() != nil {
 		return
 	}
@@ -284,7 +284,7 @@ func (d *driver) Metrics() *openlatency.MetricsInfo {
 ///////////////////////////////////////////////////////////////////////////////
 
 // prepare request for RTB
-func (d *driver) request(request *adtype.BidRequest) (req httpclient.Request, err error) {
+func (d *driver) request(request adtype.BidRequester) (req httpclient.Request, err error) {
 	var (
 		rtbRequest interface{ Validate() error }
 		bufData    bytes.Buffer
@@ -297,7 +297,8 @@ func (d *driver) request(request *adtype.BidRequest) (req httpclient.Request, er
 	}
 
 	if d.source.Options.Trace != 0 {
-		ctxlogger.Get(request.Ctx).Error("trace marshal", zap.String("src_url", d.source.URL))
+		ctxlogger.Get(request.Context()).Error("trace marshal",
+			zap.String("src_url", d.source.URL))
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 		_ = enc.Encode(rtbRequest)
@@ -323,7 +324,7 @@ func (d *driver) request(request *adtype.BidRequest) (req httpclient.Request, er
 	return req, nil
 }
 
-func (d *driver) unmarshal(request *adtype.BidRequest, r io.Reader) (_ *adresponse.BidResponse, err error) {
+func (d *driver) unmarshal(request adtype.BidRequester, r io.Reader) (_ *adresponse.BidResponse, err error) {
 	var bidResp openrtb.BidResponse
 
 	switch d.source.RequestType {
@@ -333,7 +334,7 @@ func (d *driver) unmarshal(request *adtype.BidRequest, r io.Reader) (_ *adrespon
 			if data, err = io.ReadAll(r); err == nil {
 				var buf bytes.Buffer
 				_ = json.Indent(&buf, data, "", "  ")
-				ctxlogger.Get(request.Ctx).Error("trace unmarshal",
+				ctxlogger.Get(request.Context()).Error("trace unmarshal",
 					zap.String("src_url", d.source.URL))
 				fmt.Fprintln(os.Stdout, "UNMARSHAL: "+buf.String())
 				err = json.Unmarshal(data, &bidResp)
@@ -402,7 +403,7 @@ func (d *driver) unmarshal(request *adtype.BidRequest, r io.Reader) (_ *adrespon
 }
 
 // fillRequest of HTTP
-func (d *driver) fillRequest(request *adtype.BidRequest, httpReq httpclient.Request) {
+func (d *driver) fillRequest(request adtype.BidRequester, httpReq httpclient.Request) {
 	httpReq.SetHeader("Content-Type", "application/json")
 
 	// Set OpenRTB version

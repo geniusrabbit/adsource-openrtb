@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/geniusrabbit/adcorelib/admodels"
+	"github.com/geniusrabbit/adcorelib/adquery/bidrequest"
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/billing"
 	"github.com/geniusrabbit/adcorelib/price"
@@ -19,8 +20,8 @@ func TestItemPricing(t *testing.T) {
 			IDval:        1,
 			RevenueShare: 0.9,
 		}
-		imp   = adtype.Impression{Target: &adtype.TargetEmpty{Acc: acc}}
-		items = []adtype.ResponserItem{newRTBResponse(acc, imp)}
+		imp   = &adtype.Impression{Target: &adtype.TargetEmpty{Acc: acc}}
+		items = []adtype.ResponseItem{newRTBResponse(acc, imp)}
 	)
 
 	for _, item := range items {
@@ -45,12 +46,12 @@ func TestItemPricing(t *testing.T) {
 	}
 }
 
-func newRTBResponse(_ *admodels.Account, imp adtype.Impression) *ResponseBidItem {
+func newRTBResponse(_ *admodels.Account, imp *adtype.Impression) *ResponseBidItem {
 	return &ResponseBidItem{
 		ItemID:   "1",
 		Src:      &adtype.SourceEmpty{PriceCorrectionReduce: 0},
-		Req:      &adtype.BidRequest{ID: "xxx", Imps: []adtype.Impression{imp}},
-		Imp:      &imp,
+		Req:      &bidrequest.BidRequest{IDVal: "xxx", Imps: []*adtype.Impression{imp}},
+		Imp:      imp,
 		Bid:      &openrtb.Bid{Price: 60},
 		SecondAd: adtype.SecondAd{},
 		PriceScope: price.PriceScopeImpression{

@@ -12,13 +12,13 @@ import (
 	"github.com/geniusrabbit/udetect"
 )
 
-func requestToRTBv3(req *adtype.BidRequest, opts ...BidRequestRTBOption) *openrtb.BidRequest {
+func requestToRTBv3(req adtype.BidRequester, opts ...BidRequestRTBOption) *openrtb.BidRequest {
 	var opt BidRequestRTBOptions
 	for _, fn := range opts {
 		fn(&opt)
 	}
 	return &openrtb.BidRequest{
-		ID:                req.ID,
+		ID:                req.ID(),
 		Impressions:       openrtbV3Impressions(req, &opt),
 		Site:              uopenrtbOpenrtbV3SiteFrom(req.SiteInfo()),
 		App:               uopenrtbOpenrtbV3ApplicationFrom(req.AppInfo()),
@@ -36,10 +36,10 @@ func requestToRTBv3(req *adtype.BidRequest, opts ...BidRequestRTBOption) *openrt
 	}
 }
 
-func openrtbV3Impressions(req *adtype.BidRequest, opts *BidRequestRTBOptions) (list []openrtb.Impression) {
-	for _, imp := range req.Imps {
+func openrtbV3Impressions(req adtype.BidRequester, opts *BidRequestRTBOptions) (list []openrtb.Impression) {
+	for _, imp := range req.Impressions() {
 		for _, format := range imp.Formats() {
-			if openRTBImp := openrtbV3ImpressionByFormat(req, &imp, format, opts); openRTBImp != nil {
+			if openRTBImp := openrtbV3ImpressionByFormat(req, imp, format, opts); openRTBImp != nil {
 				list = append(list, *openRTBImp)
 			}
 		}
@@ -47,7 +47,7 @@ func openrtbV3Impressions(req *adtype.BidRequest, opts *BidRequestRTBOptions) (l
 	return list
 }
 
-func openrtbV3ImpressionByFormat(req *adtype.BidRequest, imp *adtype.Impression, format *types.Format, opts *BidRequestRTBOptions) *openrtb.Impression {
+func openrtbV3ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression, format *types.Format, opts *BidRequestRTBOptions) *openrtb.Impression {
 	var (
 		banner *openrtb.Banner
 		video  *openrtb.Video
@@ -118,7 +118,7 @@ func openrtbV3ImpressionByFormat(req *adtype.BidRequest, imp *adtype.Impression,
 	}
 }
 
-func openrtbV3NativeRequest(req *adtype.BidRequest, imp *adtype.Impression, format *types.Format, opts *BidRequestRTBOptions) json.RawMessage {
+func openrtbV3NativeRequest(req adtype.BidRequester, imp *adtype.Impression, format *types.Format, opts *BidRequestRTBOptions) json.RawMessage {
 	native := &openrtbnreq.Request{
 		Ver:              opts.openNativeVer(),                    // Version of the Native Markup
 		LayoutID:         0,                                       // DEPRECATED The Layout ID of the native ad
@@ -140,7 +140,7 @@ func openrtbV3NativeRequest(req *adtype.BidRequest, imp *adtype.Impression, form
 	return json.RawMessage(nativePrepared)
 }
 
-func openrtbV3NativeAssets(_ *adtype.BidRequest, _ *adtype.Impression, format *types.Format) []openrtbnreq.Asset {
+func openrtbV3NativeAssets(req adtype.BidRequester, imp *adtype.Impression, format *types.Format) []openrtbnreq.Asset {
 	assets := make([]openrtbnreq.Asset, 0, len(format.Config.Assets)+len(format.Config.Fields))
 	for _, asset := range format.Config.Assets {
 		if !asset.IsVideoSupport() || asset.IsImageSupport() {

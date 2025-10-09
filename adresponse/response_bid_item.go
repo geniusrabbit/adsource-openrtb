@@ -1,6 +1,6 @@
 //
-// @project GeniusRabbit corelib 2017 - 2019
-// @author Dmitry Ponomarev <demdxx@gmail.com> 2017 - 2019
+// @project GeniusRabbit corelib 2017 - 2019, 2025
+// @author Dmitry Ponomarev <demdxx@gmail.com> 2017 - 2019, 2025
 //
 
 package adresponse
@@ -26,9 +26,9 @@ type ResponseBidItem struct {
 	ItemID string `json:"id"`
 
 	// Request and impression data
-	Src adtype.Source      `json:"source,omitempty"`
-	Req *adtype.BidRequest `json:"request,omitempty"`
-	Imp *adtype.Impression `json:"impression,omitempty"`
+	Src adtype.Source       `json:"source,omitempty"`
+	Req adtype.BidRequester `json:"request,omitempty"`
+	Imp *adtype.Impression  `json:"impression,omitempty"`
 
 	// Format of response advertisement item
 	FormatType types.FormatType `json:"format_type,omitempty"`
@@ -44,9 +44,9 @@ type ResponseBidItem struct {
 	// Competitive second AD
 	SecondAd adtype.SecondAd `json:"second_ad,omitempty"`
 
-	Data    map[string]any    `json:"data,omitempty"`
-	assets  admodels.AdAssets `json:"-"`
-	context context.Context   `json:"-"`
+	Data    map[string]any        `json:"data,omitempty"`
+	assets  admodels.AdFileAssets `json:"-"`
+	context context.Context       `json:"-"`
 }
 
 // ID of current response item (unique code of current response)
@@ -178,7 +178,7 @@ func (it *ResponseBidItem) ClickTrackerLinks() []string {
 }
 
 // MainAsset from response
-func (it *ResponseBidItem) MainAsset() *admodels.AdAsset {
+func (it *ResponseBidItem) MainAsset() *admodels.AdFileAsset {
 	mainAsset := it.Format().Config.MainAsset()
 	if mainAsset == nil {
 		return nil
@@ -192,7 +192,7 @@ func (it *ResponseBidItem) MainAsset() *admodels.AdAsset {
 }
 
 // Assets returns list of the advertisement
-func (it *ResponseBidItem) Assets() (assets admodels.AdAssets) {
+func (it *ResponseBidItem) Assets() (assets admodels.AdFileAssets) {
 	if it.assets != nil || it.Format().Config == nil {
 		return it.assets
 	}
@@ -200,25 +200,23 @@ func (it *ResponseBidItem) Assets() (assets admodels.AdAssets) {
 	config := it.Format().Config
 	for _, configAsset := range config.Assets {
 		for _, asset := range it.Native.Assets {
-			if asset.ID != configAsset.ID {
+			if asset.ID != configAsset.ID && (asset.Image != nil || asset.Video != nil) {
 				continue
 			}
-			newAsset := &admodels.AdAsset{
+			newAsset := &admodels.AdFileAsset{
 				ID:   uint64(asset.ID),
 				Name: configAsset.GetName(),
 			}
 			switch {
 			case asset.Image != nil:
-				newAsset.Path = asset.Image.URL
-				newAsset.Type = types.AdAssetImageType
+				newAsset.URL = asset.Image.URL
+				newAsset.Type = types.AdFileAssetImageType
 				newAsset.ContentType = ""
 				newAsset.Width = asset.Image.Width
 				newAsset.Height = asset.Image.Height
-			// case asset.Video != nil:
-			// 	newAsset.Path = asset.Video.URL
-			// 	newAsset.Type = models.AdAssetVideoType
-			default:
-				// TODO error generation
+			case asset.Video != nil:
+				newAsset.URL = asset.Video.VASTTag
+				newAsset.Type = types.AdFileAssetVideoType
 			}
 			it.assets = append(it.assets, newAsset)
 			break
@@ -274,12 +272,12 @@ func (it *ResponseBidItem) ExtTargetID() string {
 }
 
 // AdID returns the advertisement ID of the system
-func (it *ResponseBidItem) AdID() uint64 {
-	return 0
+func (it *ResponseBidItem) AdID() string {
+	return ""
 }
 
-// AdCreativeID of the external advertisement
-func (it *ResponseBidItem) AdCreativeID() string {
+// CreativeID of the external advertisement
+func (it *ResponseBidItem) CreativeID() string {
 	if it == nil || it.Bid == nil {
 		return ""
 	}
@@ -481,5 +479,5 @@ func (it *ResponseBidItem) Get(key string) (res any) {
 }
 
 var (
-	_ adtype.ResponserItem = &ResponseBidItem{}
+	_ adtype.ResponseItem = &ResponseBidItem{}
 )
