@@ -83,7 +83,7 @@ func (r *BidResponse) Prepare() {
 	for i, seat := range r.BidResponse.SeatBid {
 		for i, bid := range seat.Bid {
 			imp := xtypes.Slice[*adtype.Impression](r.Req.Impressions()).FirstOr(nil,
-				func(imp **adtype.Impression) bool { return strings.HasPrefix((*imp).ID, bid.ImpID) })
+				func(imp **adtype.Impression) bool { return strings.HasPrefix(bid.ImpID, (*imp).ID) })
 			if imp != nil {
 				// Set default dimensions from impression if not present in bid
 				if bid.W == 0 && bid.H == 0 {
@@ -118,7 +118,7 @@ func (r *BidResponse) Prepare() {
 	// Create response ad items from the optimal bids for each impression
 	for _, bid := range r.OptimalBids() {
 		imp := xtypes.Slice[*adtype.Impression](r.Req.Impressions()).FirstOr(nil,
-			func(imp **adtype.Impression) bool { return strings.HasPrefix((*imp).ID, bid.ImpID) })
+			func(imp **adtype.Impression) bool { return strings.HasPrefix(bid.ImpID, (*imp).ID) })
 		if imp != nil {
 			if bidItem := r.prepareBidItem(bid, imp); bidItem != nil {
 				r.ads = append(r.ads, bidItem)
