@@ -271,6 +271,11 @@ func (it *ResponseBidItem) ExtTargetID() string {
 	return it.Imp.ExternalTargetID
 }
 
+// TargetCodename of the target placement codename
+func (it *ResponseBidItem) TargetCodename() string {
+	return it.Imp.TargetCodename()
+}
+
 // AdID returns the advertisement ID of the system
 func (it *ResponseBidItem) AdID() string {
 	return ""

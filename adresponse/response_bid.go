@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"iter"
+	"sort"
 	"strings"
 
 	openrtb "github.com/bsm/openrtb"
@@ -305,20 +306,42 @@ func (r *BidResponse) OptimalBids() []*openrtb.Bid {
 	}
 
 	// Find the highest-priced bid for each impression ID
-	bids := make(map[string]*openrtb.Bid, len(r.BidResponse.SeatBid))
+	totalBidsCount := 0
+
+	// Sort bids by impression ID and price to ensure we get the most expensive bid for each impression
 	for _, seat := range r.BidResponse.SeatBid {
-		for _, bid := range seat.Bid {
-			if obid, ok := bids[bid.ImpID]; !ok || obid.Price < bid.Price {
-				bids[bid.ImpID] = &bid
+		totalBidsCount += len(seat.Bid)
+	}
+
+	allBids := make([]*openrtb.Bid, 0, totalBidsCount)
+	for _, seat := range r.BidResponse.SeatBid {
+		for i := range seat.Bid {
+			allBids = append(allBids, &seat.Bid[i])
+		}
+	}
+
+	sort.Slice(allBids, func(i, j int) bool {
+		return allBids[i].ImpID < allBids[j].ImpID ||
+			(allBids[i].ImpID == allBids[j].ImpID && allBids[i].Price > allBids[j].Price)
+	})
+
+	// Map to store the highest bid for each impression ID
+	optimalBids := make([]*openrtb.Bid, 0, totalBidsCount)
+
+	for _, imp := range r.Req.Impressions() {
+		added := 0
+		bidCount := max(imp.Count, 1)
+		for _, bid := range allBids {
+			if strings.HasPrefix(bid.ImpID, imp.ID) {
+				optimalBids = append(optimalBids, bid)
+				added++
+			}
+			if added >= bidCount {
+				break
 			}
 		}
 	}
 
-	// Convert map to slice for return
-	optimalBids := make([]*openrtb.Bid, 0, len(bids))
-	for _, b := range bids {
-		optimalBids = append(optimalBids, b)
-	}
 	r.optimalBids = optimalBids
 	return r.optimalBids
 }
