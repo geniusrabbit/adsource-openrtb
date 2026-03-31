@@ -7,7 +7,7 @@ require (
 	github.com/bsm/openrtb/v3 v3.2.1
 	github.com/demdxx/gocast/v2 v2.11.0
 	github.com/demdxx/xtypes v0.3.1
-	github.com/geniusrabbit/adcorelib v0.0.0-20260331151326-8e9dacd691a6
+	github.com/geniusrabbit/adcorelib v0.0.0-20260331163616-23b31d280bc8
 	github.com/geniusrabbit/udetect v0.0.0-20251009164230-11a5e0a2d3b8
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
