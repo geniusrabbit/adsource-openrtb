@@ -178,9 +178,11 @@ func (d *driver) Bid(request adtype.BidRequester) (response adtype.Response) {
 		return adtype.NewErrorResponse(request, err)
 	}
 
+	// Send request to source
 	resp, err := d.netClient.Do(httpRequest)
 	d.latencyMetrics.UpdateQueryLatency(time.Duration(fasttime.UnixTimestampNano() - beginTime))
 
+	// Process response status and errors
 	if err != nil {
 		d.processHTTPReponse(resp, err)
 		ctxlogger.Get(request.Context()).Debug("bid",
@@ -188,23 +190,27 @@ func (d *driver) Bid(request adtype.BidRequester) (response adtype.Response) {
 			zap.Error(err))
 		return adtype.NewErrorResponse(request, err)
 	}
+	defer resp.Close()
 
+	// Log response status and latency
 	ctxlogger.Get(request.Context()).Debug("bid",
 		zap.String("source_url", d.source.URL),
 		zap.String("http_response_status_txt", http.StatusText(resp.StatusCode())),
 		zap.Int("http_response_status", resp.StatusCode()))
 
-	if resp.StatusCode() == http.StatusNoContent {
+	// NOTE: StatusNoContent - is the standard OpenRTB response for no bid, but some sources can return StatusNotFound in this case
+	if resp.StatusCode() == http.StatusNoContent || resp.StatusCode() == http.StatusNotFound {
 		d.latencyMetrics.IncNobid()
-		return adtype.NewErrorResponse(request, ErrNoCampaignsStatus)
+		return bidresponse.NewEmptyResponse(request, d, ErrResponseNoBid)
 	}
 
+	// Not success status code
 	if resp.StatusCode() != http.StatusOK {
 		d.processHTTPReponse(resp, nil)
 		return adtype.NewErrorResponse(request, ErrInvalidResponseStatus)
 	}
 
-	defer resp.Close()
+	// Decode response body
 	if res, err := d.unmarshal(request, resp.Body()); d.source.Options.Trace != 0 && err != nil {
 		response = adtype.NewErrorResponse(request, err)
 		ctxlogger.Get(request.Context()).Error("bid response", zap.Error(err))
@@ -220,6 +226,7 @@ func (d *driver) Bid(request adtype.BidRequester) (response adtype.Response) {
 		}
 	}
 
+	// Process response status and errors
 	d.processHTTPReponse(resp, err)
 	if response == nil {
 		response = bidresponse.NewEmptyResponse(request, d, err)
@@ -429,7 +436,9 @@ func (d *driver) fillRequest(request adtype.BidRequester, httpReq httpclient.Req
 func (d *driver) processHTTPReponse(resp httpclient.Response, err error) {
 	switch {
 	case err != nil || resp == nil ||
-		(resp.StatusCode() != http.StatusOK && resp.StatusCode() != http.StatusNoContent):
+		(resp.StatusCode() != http.StatusOK &&
+			resp.StatusCode() != http.StatusNoContent &&
+			resp.StatusCode() != http.StatusNotFound):
 		if errors.Is(err, http.ErrHandlerTimeout) {
 			d.latencyMetrics.IncTimeout()
 		}

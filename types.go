@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/geniusrabbit/adcorelib/admodels"
+	"github.com/geniusrabbit/adcorelib/adtype"
 )
 
 // Request type enum
@@ -20,5 +21,5 @@ const (
 var (
 	ErrResponseAreNotSecure  = errors.New("response are not secure")
 	ErrInvalidResponseStatus = errors.New("invalid response status")
-	ErrNoCampaignsStatus     = errors.New("no campaigns response")
+	ErrResponseNoBid         = adtype.ErrResponseNoBid
 )
