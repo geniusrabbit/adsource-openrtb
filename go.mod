@@ -7,7 +7,7 @@ require (
 	github.com/bsm/openrtb/v3 v3.2.1
 	github.com/demdxx/gocast/v2 v2.11.0
 	github.com/demdxx/xtypes v0.3.1
-	github.com/geniusrabbit/adcorelib v0.0.0-20260415124817-2e3d66408ddf
+	github.com/geniusrabbit/adcorelib v0.0.0-20260417103038-f421382ea3a1
 	github.com/geniusrabbit/udetect v0.0.0-20251009164230-11a5e0a2d3b8
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
@@ -26,7 +26,7 @@ require (
 	github.com/geniusrabbit/hourstable v1.0.0 // indirect
 	github.com/geniusrabbit/notificationcenter/v2 v2.5.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
@@ -42,7 +42,7 @@ require (
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.68.0 // indirect
+	github.com/valyala/fasthttp v1.70.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect

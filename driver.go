@@ -129,6 +129,22 @@ func (d *driver) ObjectKey() uint64 { return d.source.ID }
 // Protocol of source
 func (d *driver) Protocol() string { return d.source.Protocol }
 
+// Info returns information about the source platform and the source protocol
+func (d *driver) Info() *adtype.SourceInfo {
+	return &adtype.SourceInfo{
+		ID:       gocast.Str(d.source.ID),
+		Protocol: d.source.Protocol,
+	}
+}
+
+// AccountID of source
+func (d *driver) AccountID() uint64 {
+	if d.source.Account == nil {
+		return 0
+	}
+	return d.source.Account.ID()
+}
+
 // Test request before processing
 func (d *driver) Test(request adtype.BidRequester) bool {
 	if d.source.RPS > 0 {
@@ -190,7 +206,7 @@ func (d *driver) Bid(request adtype.BidRequester) (response adtype.Response) {
 			zap.Error(err))
 		return adtype.NewErrorResponse(request, err)
 	}
-	defer resp.Close()
+	defer func() { _ = resp.Close() }()
 
 	// Log response status and latency
 	ctxlogger.Get(request.Context()).Debug("bid",
@@ -343,7 +359,7 @@ func (d *driver) unmarshal(request adtype.BidRequester, r io.Reader) (_ *adrespo
 				_ = json.Indent(&buf, data, "", "  ")
 				ctxlogger.Get(request.Context()).Error("trace unmarshal",
 					zap.String("src_url", d.source.URL))
-				fmt.Fprintln(os.Stdout, "UNMARSHAL: "+buf.String())
+				_, _ = fmt.Fprintln(os.Stdout, "UNMARSHAL: "+buf.String())
 				err = json.Unmarshal(data, &bidResp)
 			}
 		} else {
