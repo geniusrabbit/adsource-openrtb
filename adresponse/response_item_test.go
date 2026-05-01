@@ -46,8 +46,8 @@ func TestItemPricing(t *testing.T) {
 	}
 }
 
-func newRTBResponse(_ *admodels.Account, imp *adtype.Impression) *ResponseBidItem {
-	return &ResponseBidItem{
+func newRTBResponse(_ *admodels.Account, imp *adtype.Impression) *ResponseBannerBidItem {
+	return &ResponseBannerBidItem{
 		ItemID:   "1",
 		Src:      &adtype.SourceEmpty{PriceCorrectionReduce: 0},
 		Req:      &bidrequest.BidRequest{IDVal: "xxx", Imps: []*adtype.Impression{imp}},

@@ -9,10 +9,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/demdxx/gocast/v2"
-
 	"github.com/bsm/openrtb"
-	natresp "github.com/bsm/openrtb/native/response"
+	"github.com/demdxx/gocast/v2"
 
 	"github.com/geniusrabbit/adcorelib/admodels"
 	"github.com/geniusrabbit/adcorelib/admodels/types"
@@ -21,8 +19,29 @@ import (
 	"github.com/geniusrabbit/adcorelib/price"
 )
 
-// ResponseBidItem value
-type ResponseBidItem struct {
+// BannerInfo contains information about banner advertisement
+type BannerInfo struct {
+	Title         string   `json:"title,omitempty"`
+	HTML          string   `json:"html,omitempty"`
+	IframeURL     string   `json:"iframe_url,omitempty"`
+	ImageURL      string   `json:"image_url,omitempty"`
+	VideoURL      string   `json:"video_url,omitempty"`
+	Width         int      `json:"width,omitempty"`
+	Height        int      `json:"height,omitempty"`
+	WRatio        int      `json:"wratio,omitempty"`
+	HRatio        int      `json:"hratio,omitempty"`
+	LinkURL       string   `json:"link_url,omitempty"`
+	ImpTrackers   []string `json:"imp_trackers,omitempty"`
+	ViewTrackers  []string `json:"view_trackers,omitempty"`
+	ClickTrackers []string `json:"click_trackers,omitempty"`
+}
+
+func (b *BannerInfo) IsValid() bool {
+	return b.HTML != "" || b.IframeURL != "" || (b.LinkURL != "" && (b.ImageURL != "" || b.VideoURL != ""))
+}
+
+// ResponseBannerBidItem value
+type ResponseBannerBidItem struct {
 	ItemID string `json:"id"`
 
 	// Request and impression data
@@ -35,37 +54,95 @@ type ResponseBidItem struct {
 	RespFormat *types.Format    `json:"format,omitempty"`
 
 	// External response data from RTB source
-	Bid        *openrtb.Bid      `json:"bid,omitempty"`
-	Native     *natresp.Response `json:"native,omitempty"`
-	ActionLink string            `json:"action_link,omitempty"`
+	Bid        *openrtb.Bid `json:"bid,omitempty"`
+	BannerInfo BannerInfo   `json:"banner_info"`
 
 	PriceScope price.PriceScopeImpression `json:"price_scope,omitempty"`
 
 	// Competitive second AD
 	SecondAd adtype.SecondAd `json:"second_ad,omitempty"`
 
-	Data    map[string]any        `json:"data,omitempty"`
 	assets  admodels.AdFileAssets `json:"-"`
 	context context.Context       `json:"-"`
 }
 
+func newResponseBannerBidItem(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adtype.Impression, format *types.Format) (*ResponseBannerBidItem, error) {
+	// Calculate the bid price and set up the price scope for the bid item
+	cpmPrice := billing.MoneyFloat(bid.Price)
+
+	// Set the bid item properties
+	priceScope := price.PriceScopeImpression{
+		MaxBidImpPrice: 0,
+		BidImpPrice:    0,
+		ImpPrice:       cpmPrice / 1000, // Convert from micros (CPM) to actual price
+		ECPM:           cpmPrice,        // Original eCPM price
+	}
+
+	// Create bid item for banner format
+	bidItem := &ResponseBannerBidItem{
+		ItemID:     imp.ID,
+		Src:        src,
+		Req:        req,
+		Imp:        imp,
+		Bid:        bid,
+		FormatType: bannerFormatType(bid.AdMarkup),
+		RespFormat: format,
+		PriceScope: priceScope,
+		BannerInfo: BannerInfo{
+			Width:  bid.W,
+			Height: bid.H,
+			WRatio: bid.WRatio,
+			HRatio: bid.HRatio,
+		},
+	}
+
+	// Determine the content of the banner ad based on the ad markup
+	if strings.HasPrefix(bid.AdMarkup, "https://") || strings.HasPrefix(bid.AdMarkup, "http://") {
+		bidItem.BannerInfo.IframeURL = bid.AdMarkup
+	} else if strings.HasPrefix(bid.AdMarkup, "<?xml") {
+		iframeURL, clickURL, imgURL, err := parseInterstitialAdMarkup(bid.AdMarkup)
+		if err != nil {
+			return nil, err
+		}
+		bidItem.BannerInfo.IframeURL = iframeURL
+		bidItem.BannerInfo.LinkURL = clickURL
+		bidItem.BannerInfo.ImageURL = imgURL
+	} else {
+		if strings.HasPrefix(bid.AdMarkup, "//") {
+			bidItem.BannerInfo.IframeURL = bid.AdMarkup
+		} else {
+			bidItem.BannerInfo.HTML = bid.AdMarkup
+		}
+	}
+
+	// Validate the banner information
+	if !bidItem.BannerInfo.IsValid() {
+		return nil, ErrInvalidAdContent
+	}
+
+	// Set the bid impression price based on the bid price and impression
+	bidItem.PriceScope.MaxBidImpPrice = price.CalculatePurchasePrice(bidItem, adtype.ActionImpression)
+
+	return bidItem, nil
+}
+
 // ID of current response item (unique code of current response)
-func (it *ResponseBidItem) ID() string {
+func (it *ResponseBannerBidItem) ID() string {
 	return it.ItemID
 }
 
 // Source of response
-func (it *ResponseBidItem) Source() adtype.Source {
+func (it *ResponseBannerBidItem) Source() adtype.Source {
 	return it.Src
 }
 
 // NetworkName by source
-func (it *ResponseBidItem) NetworkName() string {
+func (it *ResponseBannerBidItem) NetworkName() string {
 	return ""
 }
 
 // ContentItemString from the ad
-func (it *ResponseBidItem) ContentItemString(name string) string {
+func (it *ResponseBannerBidItem) ContentItemString(name string) string {
 	if val := it.ContentItem(name); val != nil {
 		return gocast.Str(val)
 	}
@@ -73,35 +150,12 @@ func (it *ResponseBidItem) ContentItemString(name string) string {
 }
 
 // ContentItem returns the ad response data
-func (it *ResponseBidItem) ContentItem(name string) any {
-	if it.Data != nil {
-		return it.Data[name]
-	}
-
-	formatType := it.PriorityFormatType()
-
+func (it *ResponseBannerBidItem) ContentItem(name string) any {
 	switch name {
-	case adtype.ContentItemContent, adtype.ContentItemIFrameURL:
-		if formatType.IsBanner() {
-			switch name {
-			case adtype.ContentItemIFrameURL:
-				if strings.HasPrefix(it.Bid.AdMarkup, "http://") ||
-					strings.HasPrefix(it.Bid.AdMarkup, "https://") ||
-					(strings.HasPrefix(it.Bid.AdMarkup, "//") && !strings.ContainsAny(it.Bid.AdMarkup, "\n\t")) {
-					return it.Bid.AdMarkup
-				}
-			case adtype.ContentItemContent:
-				return it.Bid.AdMarkup
-			}
-		}
-	case adtype.ContentItemLink:
-		switch {
-		case it.Native != nil:
-			return it.Native.Link.URL
-		case formatType.IsDirect():
-			// In this case here have to be the advertisement link
-			return it.Bid.AdMarkup
-		}
+	case adtype.ContentItemIFrameURL:
+		return it.BannerInfo.IframeURL
+	case adtype.ContentItemContent:
+		return it.BannerInfo.HTML
 	case adtype.ContentItemNotifyWinURL:
 		if it.Bid != nil {
 			return it.Bid.NURL
@@ -111,122 +165,56 @@ func (it *ResponseBidItem) ContentItem(name string) any {
 			return it.Bid.BURL
 		}
 	case types.FormatFieldTitle:
-		if it.Native != nil {
-			for _, asset := range it.Native.Assets {
-				if asset.Title != nil {
-					return asset.Title.Text
-				}
-			}
-		}
-	default:
-		if it.Native != nil {
-			for _, asset := range it.Native.Assets {
-				if asset.Data != nil && asset.Data.Label == name {
-					return asset.Data.Value
-				}
-			}
-		}
+		return it.BannerInfo.Title
 	}
 	return nil
 }
 
 // ContentFields from advertisement object
-func (it *ResponseBidItem) ContentFields() map[string]any {
+func (it *ResponseBannerBidItem) ContentFields() map[string]any {
 	if it.Format().Config == nil {
 		return nil
 	}
 	fields := map[string]any{}
-	config := it.Format().Config
-	for _, field := range config.Fields {
-		for _, asset := range it.Native.Assets {
-			if field.ID != asset.ID {
-				continue
-			}
-			switch {
-			case asset.Title != nil:
-				fields[field.Name] = asset.Title.Text
-			case asset.Link != nil:
-				fields[field.Name] = asset.Link.URL
-			case asset.Data != nil:
-				fields[field.Name] = asset.Data.Value
-			}
-			break
-		}
+	if it.BannerInfo.IframeURL != "" {
+		fields[adtype.ContentItemIFrameURL] = it.BannerInfo.IframeURL
+	}
+	if it.BannerInfo.HTML != "" {
+		fields[adtype.ContentItemContent] = it.BannerInfo.HTML
+	}
+	if it.BannerInfo.Title != "" {
+		fields[types.FormatFieldTitle] = it.BannerInfo.Title
 	}
 	return fields
 }
 
 // ImpressionTrackerLinks returns traking links for impression action
-func (it *ResponseBidItem) ImpressionTrackerLinks() []string {
-	if it.Native == nil {
-		return nil
-	}
-	return it.Native.ImpTrackers
+func (it *ResponseBannerBidItem) ImpressionTrackerLinks() []string {
+	return it.BannerInfo.ImpTrackers
 }
 
 // ViewTrackerLinks returns traking links for view action
-func (it *ResponseBidItem) ViewTrackerLinks() []string {
-	return nil
+func (it *ResponseBannerBidItem) ViewTrackerLinks() []string {
+	return it.BannerInfo.ViewTrackers
 }
 
 // ClickTrackerLinks returns third-party tracker URLs to be fired on click of the URL
-func (it *ResponseBidItem) ClickTrackerLinks() []string {
-	if it.Native == nil {
-		return nil
-	}
-	return it.Native.Link.ClickTrackers
+func (it *ResponseBannerBidItem) ClickTrackerLinks() []string {
+	return it.BannerInfo.ClickTrackers
 }
 
 // MainAsset from response
-func (it *ResponseBidItem) MainAsset() *admodels.AdFileAsset {
-	mainAsset := it.Format().Config.MainAsset()
-	if mainAsset == nil {
-		return nil
-	}
-	for _, asset := range it.Assets() {
-		if int(asset.ID) == mainAsset.ID {
-			return asset
-		}
-	}
+func (it *ResponseBannerBidItem) MainAsset() *admodels.AdFileAsset {
 	return nil
 }
 
 // Assets returns list of the advertisement
-func (it *ResponseBidItem) Assets() (assets admodels.AdFileAssets) {
-	if it.assets != nil || it.Format().Config == nil {
-		return it.assets
-	}
-
-	config := it.Format().Config
-	for _, configAsset := range config.Assets {
-		for _, asset := range it.Native.Assets {
-			if asset.ID != configAsset.ID && (asset.Image != nil || asset.Video != nil) {
-				continue
-			}
-			newAsset := &admodels.AdFileAsset{
-				ID:   uint64(asset.ID),
-				Name: configAsset.GetName(),
-			}
-			switch {
-			case asset.Image != nil:
-				newAsset.URL = asset.Image.URL
-				newAsset.Type = types.AdFileAssetImageType
-				newAsset.ContentType = ""
-				newAsset.Width = asset.Image.Width
-				newAsset.Height = asset.Image.Height
-			case asset.Video != nil:
-				newAsset.URL = asset.Video.VASTTag
-				newAsset.Type = types.AdFileAssetVideoType
-			}
-			it.assets = append(it.assets, newAsset)
-			break
-		}
-	}
-	return it.assets
+func (it *ResponseBannerBidItem) Assets() admodels.AdFileAssets {
+	return nil
 }
 
 // Format object model
-func (it *ResponseBidItem) Format() *types.Format {
+func (it *ResponseBannerBidItem) Format() *types.Format {
 	if it == nil {
 		return nil
 	}
@@ -234,7 +222,7 @@ func (it *ResponseBidItem) Format() *types.Format {
 }
 
 // PriorityFormatType from current Ad
-func (it *ResponseBidItem) PriorityFormatType() types.FormatType {
+func (it *ResponseBannerBidItem) PriorityFormatType() types.FormatType {
 	if it.FormatType != types.FormatUndefinedType {
 		return it.FormatType
 	}
@@ -246,12 +234,12 @@ func (it *ResponseBidItem) PriorityFormatType() types.FormatType {
 }
 
 // Impression place object
-func (it *ResponseBidItem) Impression() *adtype.Impression {
+func (it *ResponseBannerBidItem) Impression() *adtype.Impression {
 	return it.Imp
 }
 
 // ImpressionID unique code string
-func (it *ResponseBidItem) ImpressionID() string {
+func (it *ResponseBannerBidItem) ImpressionID() string {
 	if it.Imp == nil {
 		return ""
 	}
@@ -259,7 +247,7 @@ func (it *ResponseBidItem) ImpressionID() string {
 }
 
 // ExtImpressionID unique code of RTB response
-func (it *ResponseBidItem) ExtImpressionID() string {
+func (it *ResponseBannerBidItem) ExtImpressionID() string {
 	if it.Imp == nil {
 		return ""
 	}
@@ -267,22 +255,22 @@ func (it *ResponseBidItem) ExtImpressionID() string {
 }
 
 // ExtTargetID of the external network
-func (it *ResponseBidItem) ExtTargetID() string {
+func (it *ResponseBannerBidItem) ExtTargetID() string {
 	return it.Imp.ExternalTargetID
 }
 
 // TargetCodename of the target placement codename
-func (it *ResponseBidItem) TargetCodename() string {
+func (it *ResponseBannerBidItem) TargetCodename() string {
 	return it.Imp.TargetCodename()
 }
 
 // AdID returns the advertisement ID of the system
-func (it *ResponseBidItem) AdID() string {
+func (it *ResponseBannerBidItem) AdID() string {
 	return ""
 }
 
 // CreativeID of the external advertisement
-func (it *ResponseBidItem) CreativeID() string {
+func (it *ResponseBannerBidItem) CreativeID() string {
 	if it == nil || it.Bid == nil {
 		return ""
 	}
@@ -290,7 +278,7 @@ func (it *ResponseBidItem) CreativeID() string {
 }
 
 // AccountID returns the account ID of the source
-func (it *ResponseBidItem) AccountID() uint64 {
+func (it *ResponseBannerBidItem) AccountID() uint64 {
 	if it.Src != nil {
 		type accountIDGetter interface {
 			AccountID() uint64
@@ -303,7 +291,7 @@ func (it *ResponseBidItem) AccountID() uint64 {
 }
 
 // CampaignID returns the campaign ID of the system
-func (it *ResponseBidItem) CampaignID() uint64 {
+func (it *ResponseBannerBidItem) CampaignID() uint64 {
 	return 0
 }
 
@@ -313,17 +301,17 @@ func (it *ResponseBidItem) CampaignID() uint64 {
 
 // PricingModel of advertisement
 // In case of RTB it can be CPM only
-func (it *ResponseBidItem) PricingModel() types.PricingModel {
+func (it *ResponseBannerBidItem) PricingModel() types.PricingModel {
 	return types.PricingModelCPM
 }
 
 // FixedPurchasePrice returns the fixed price of the action
-func (it *ResponseBidItem) FixedPurchasePrice(action adtype.Action) billing.Money {
+func (it *ResponseBannerBidItem) FixedPurchasePrice(action adtype.Action) billing.Money {
 	return it.Imp.PurchasePrice(action)
 }
 
 // ECPM returns the effective cost per mille
-func (it *ResponseBidItem) ECPM() billing.Money {
+func (it *ResponseBannerBidItem) ECPM() billing.Money {
 	if it == nil || it.Bid == nil {
 		return 0
 	}
@@ -331,11 +319,11 @@ func (it *ResponseBidItem) ECPM() billing.Money {
 }
 
 // PriceTestMode returns true if the price is in test mode
-func (it *ResponseBidItem) PriceTestMode() bool { return false }
+func (it *ResponseBannerBidItem) PriceTestMode() bool { return false }
 
 // Price for specific action if supported `click`, `lead`, `view`
 // returns total price of the action
-func (it *ResponseBidItem) Price(action adtype.Action) billing.Money {
+func (it *ResponseBannerBidItem) Price(action adtype.Action) billing.Money {
 	if it == nil || it.Bid == nil {
 		return 0
 	}
@@ -345,12 +333,12 @@ func (it *ResponseBidItem) Price(action adtype.Action) billing.Money {
 
 // BidViewPrice returns bid price for the external auction source.
 // The current bid price will be adjusted according to the source correction factor and the commission share factor
-func (it *ResponseBidItem) BidImpressionPrice() billing.Money {
+func (it *ResponseBannerBidItem) BidImpressionPrice() billing.Money {
 	return it.PriceScope.BidImpPrice
 }
 
 // SetBidImpressionPrice value for external sources auction the system will pay
-func (it *ResponseBidItem) SetBidImpressionPrice(bid billing.Money) error {
+func (it *ResponseBannerBidItem) SetBidImpressionPrice(bid billing.Money) error {
 	if !it.PriceScope.SetBidImpressionPrice(bid, false) {
 		return adtype.ErrNewAuctionBidIsHigherThenMaxBid
 	}
@@ -359,34 +347,34 @@ func (it *ResponseBidItem) SetBidImpressionPrice(bid billing.Money) error {
 
 // PrepareBidImpressionPrice prepares the price for the action
 // The price is adjusted according to the source correction factor and the commission share factor
-func (it *ResponseBidItem) PrepareBidImpressionPrice(price billing.Money) billing.Money {
+func (it *ResponseBannerBidItem) PrepareBidImpressionPrice(price billing.Money) billing.Money {
 	return it.PriceScope.PrepareBidImpressionPrice(price)
 }
 
 // InternalAuctionCPMBid value provides maximal possible price without any commission
 // According to this value the system can choice the best item for the auction
-func (it *ResponseBidItem) InternalAuctionCPMBid() billing.Money {
+func (it *ResponseBannerBidItem) InternalAuctionCPMBid() billing.Money {
 	return price.CalculateInternalAuctionBid(it)
 }
 
 // PurchasePrice gives the price of view from external resource.
 // The cost of this request for the system.
-func (it *ResponseBidItem) PurchasePrice(action adtype.Action) billing.Money {
+func (it *ResponseBannerBidItem) PurchasePrice(action adtype.Action) billing.Money {
 	return price.CalculatePurchasePrice(it, action)
 }
 
 // PotentialPrice wich can be received from source but was marked as descrepancy
-func (it *ResponseBidItem) PotentialPrice(action adtype.Action) billing.Money {
+func (it *ResponseBannerBidItem) PotentialPrice(action adtype.Action) billing.Money {
 	return price.CalculatePotentialPrice(it, action)
 }
 
 // FinalPrice for the action with all corrections and commissions
-func (it *ResponseBidItem) FinalPrice(action adtype.Action) billing.Money {
+func (it *ResponseBannerBidItem) FinalPrice(action adtype.Action) billing.Money {
 	return price.CalculateFinalPrice(it, action)
 }
 
 // Second campaigns
-func (it *ResponseBidItem) Second() *adtype.SecondAd {
+func (it *ResponseBannerBidItem) Second() *adtype.SecondAd {
 	return &it.SecondAd
 }
 
@@ -395,17 +383,17 @@ func (it *ResponseBidItem) Second() *adtype.SecondAd {
 ///////////////////////////////////////////////////////////////////////////////
 
 // CommissionShareFactor which system get from publisher 0..1
-func (it *ResponseBidItem) CommissionShareFactor() float64 {
+func (it *ResponseBannerBidItem) CommissionShareFactor() float64 {
 	return it.Imp.CommissionShareFactor()
 }
 
 // SourceCorrectionFactor value for the source
-func (it *ResponseBidItem) SourceCorrectionFactor() float64 {
+func (it *ResponseBannerBidItem) SourceCorrectionFactor() float64 {
 	return it.Src.PriceCorrectionReduceFactor()
 }
 
 // TargetCorrectionFactor value for the target
-func (it *ResponseBidItem) TargetCorrectionFactor() float64 {
+func (it *ResponseBannerBidItem) TargetCorrectionFactor() float64 {
 	return it.Imp.Target.RevenueShareReduceFactor()
 }
 
@@ -414,7 +402,7 @@ func (it *ResponseBidItem) TargetCorrectionFactor() float64 {
 ///////////////////////////////////////////////////////////////////////////////
 
 // RTBCategories of the advertisement
-func (it *ResponseBidItem) RTBCategories() []string {
+func (it *ResponseBannerBidItem) RTBCategories() []string {
 	if it.Bid == nil {
 		return nil
 	}
@@ -422,20 +410,20 @@ func (it *ResponseBidItem) RTBCategories() []string {
 }
 
 // IsDirect AD format
-func (it *ResponseBidItem) IsDirect() bool {
+func (it *ResponseBannerBidItem) IsDirect() bool {
 	return it.Imp.IsDirect()
 }
 
 // IsBackup indicates whether the advertisement is a backup ad type.
-func (it *ResponseBidItem) IsBackup() bool { return false }
+func (it *ResponseBannerBidItem) IsBackup() bool { return false }
 
 // ActionURL for direct ADS
-func (it *ResponseBidItem) ActionURL() string {
-	return it.ActionLink
+func (it *ResponseBannerBidItem) ActionURL() string {
+	return it.BannerInfo.LinkURL
 }
 
 // Validate item
-func (it *ResponseBidItem) Validate() error {
+func (it *ResponseBannerBidItem) Validate() error {
 	if it.Src == nil || it.Req == nil || it.Imp == nil || it.Bid == nil {
 		return adtype.ErrInvalidItemInitialisation
 	}
@@ -443,7 +431,7 @@ func (it *ResponseBidItem) Validate() error {
 }
 
 // Width of item
-func (it *ResponseBidItem) Width() int {
+func (it *ResponseBannerBidItem) Width() int {
 	if it.Bid == nil {
 		return 0
 	}
@@ -451,7 +439,7 @@ func (it *ResponseBidItem) Width() int {
 }
 
 // Height of item
-func (it *ResponseBidItem) Height() int {
+func (it *ResponseBannerBidItem) Height() int {
 	if it.Bid == nil {
 		return 0
 	}
@@ -459,7 +447,7 @@ func (it *ResponseBidItem) Height() int {
 }
 
 // Markup advertisement
-func (it *ResponseBidItem) Markup() (string, error) {
+func (it *ResponseBannerBidItem) Markup() (string, error) {
 	return "", nil
 }
 
@@ -468,7 +456,7 @@ func (it *ResponseBidItem) Markup() (string, error) {
 ///////////////////////////////////////////////////////////////////////////////
 
 // Context value
-func (it *ResponseBidItem) Context(ctx ...context.Context) context.Context {
+func (it *ResponseBannerBidItem) Context(ctx ...context.Context) context.Context {
 	if len(ctx) > 0 {
 		it.context = ctx[0]
 	}
@@ -476,7 +464,7 @@ func (it *ResponseBidItem) Context(ctx ...context.Context) context.Context {
 }
 
 // Get ext field
-func (it *ResponseBidItem) Get(key string) (res any) {
+func (it *ResponseBannerBidItem) Get(key string) (res any) {
 	if it.context == nil {
 		return res
 	}
@@ -484,5 +472,5 @@ func (it *ResponseBidItem) Get(key string) (res any) {
 }
 
 var (
-	_ adtype.ResponseItem = &ResponseBidItem{}
+	_ adtype.ResponseItem = &ResponseBannerBidItem{}
 )

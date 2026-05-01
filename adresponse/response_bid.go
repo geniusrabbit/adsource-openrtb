@@ -29,9 +29,7 @@ import (
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adtype"
-	"github.com/geniusrabbit/adcorelib/billing"
 	"github.com/geniusrabbit/adcorelib/context/ctxlogger"
-	"github.com/geniusrabbit/adcorelib/price"
 )
 
 // BidResponse represents an OpenRTB bid response with additional processing capabilities.
@@ -85,22 +83,10 @@ func (r *BidResponse) Prepare() {
 		for i, bid := range seat.Bid {
 			imp := xtypes.Slice[*adtype.Impression](r.Req.Impressions()).FirstOr(nil,
 				func(imp **adtype.Impression) bool { return strings.HasPrefix(bid.ImpID, (*imp).ID) })
-			if imp != nil {
-				// Set default dimensions from impression if not present in bid
-				if bid.W == 0 && bid.H == 0 {
-					bid.W, bid.H = imp.Width, imp.Height
-				}
 
-				if imp.IsDirect() {
-					// Handle direct creative content from bid extensions if not in AdMarkup
-					if bid.AdMarkup == "" {
-						bid.AdMarkup, _ = customDirectURL(bid.Ext)
-					}
-					// Handle XML-formatted pop markup
-					if strings.HasPrefix(bid.AdMarkup, `<?xml`) {
-						bid.AdMarkup, _ = decodePopMarkup([]byte(bid.AdMarkup))
-					}
-				}
+			// Set default dimensions from impression if not present in bid
+			if imp != nil && (bid.W == 0 && bid.H == 0) {
+				bid.W, bid.H = imp.Width, imp.Height
 			}
 
 			// Replace auction-related macros in creative content and tracking URLs
@@ -131,10 +117,11 @@ func (r *BidResponse) Prepare() {
 // prepareBidItem creates a standardized ResponseBidItem from an OpenRTB bid and impression.
 // It handles different creative formats (direct, native, banner) and sets up pricing information.
 // Returns nil if no appropriate format can be determined.
-func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) *ResponseBidItem {
+func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) adtype.ResponseItemCommon {
 	var (
 		format  *types.Format
-		bidItem *ResponseBidItem
+		bidItem adtype.ResponseItemCommon
+		err     error
 	)
 
 	// Determine the appropriate format based on impression type
@@ -159,34 +146,16 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) *
 	// Create appropriate bid item based on format type
 	switch {
 	case format.IsDirect():
-		// Handle direct response format (like click URLs)
-		bidItem = &ResponseBidItem{
-			ItemID:     imp.ID,
-			Src:        r.Src,
-			Req:        r.Req,
-			Imp:        imp,
-			Bid:        bid,
-			FormatType: types.FormatDirectType,
-			RespFormat: format,
-			ActionLink: bid.AdMarkup,
+		if bidItem, err = newResponseDirectBidItem(r.Req, r.Src, bid, imp, format); err != nil {
+			// Log direct bid item creation failures
+			ctxlogger.Get(r.Context()).Debug(
+				"Failed to create direct bid item",
+				zap.String("markup", bid.AdMarkup),
+				zap.Error(err),
+			)
 		}
 	case format.IsNative():
-		// Handle native ad format with structured data
-		native, err := decodeNativeMarkup([]byte(bid.AdMarkup))
-		if err == nil {
-			bidItem = &ResponseBidItem{
-				ItemID:     imp.ID,
-				Src:        r.Src,
-				Req:        r.Req,
-				Imp:        imp,
-				Bid:        bid,
-				FormatType: types.FormatNativeType,
-				RespFormat: format,
-				Native:     native,
-				ActionLink: native.Link.URL,
-				Data:       extractNativeDataFromImpression(imp, native),
-			}
-		} else {
+		if bidItem, err = newResponseNativeBidItem(r.Req, r.Src, bid, imp, format); err != nil {
 			// Log native markup decoding failures
 			ctxlogger.Get(r.Context()).Debug(
 				"Failed to decode native markup",
@@ -195,31 +164,23 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) *
 			)
 		}
 	case format.IsBanner() || format.IsProxy():
-		// Handle banner or proxy creative content
-		bidItem = &ResponseBidItem{
-			ItemID:     imp.ID,
-			Src:        r.Src,
-			Req:        r.Req,
-			Imp:        imp,
-			Bid:        bid,
-			FormatType: bannerFormatType(bid.AdMarkup),
-			RespFormat: format,
+		if bidItem, err = newResponseBannerBidItem(r.Req, r.Src, bid, imp, format); err != nil {
+			// Log banner markup decoding failures
+			ctxlogger.Get(r.Context()).Debug(
+				"Failed to decode banner markup",
+				zap.String("markup", bid.AdMarkup),
+				zap.Error(err),
+			)
 		}
-	}
-
-	if bidItem != nil {
-		cpmPrice := billing.MoneyFloat(bid.Price)
-
-		// Set the bid item properties
-		bidItem.PriceScope = price.PriceScopeImpression{
-			MaxBidImpPrice: 0,
-			BidImpPrice:    0,
-			ImpPrice:       cpmPrice / 1000, // Convert from micros (CPM) to actual price
-			ECPM:           cpmPrice,        // Original eCPM price
+	case format.IsVideo():
+		if bidItem, err = newResponseVASTBidItem(r.Req, r.Src, bid, imp, format); err != nil {
+			// Log video markup decoding failures
+			ctxlogger.Get(r.Context()).Debug(
+				"Failed to decode video markup",
+				zap.String("markup", bid.AdMarkup),
+				zap.Error(err),
+			)
 		}
-
-		// Set the bid impression price based on the bid price and impression
-		bidItem.PriceScope.MaxBidImpPrice = price.CalculatePurchasePrice(bidItem, adtype.ActionImpression)
 	}
 
 	return bidItem

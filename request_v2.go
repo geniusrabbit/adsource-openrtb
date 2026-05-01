@@ -91,12 +91,33 @@ func openrtbV2ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression
 			Ext:     nil,
 		}
 	case format.IsDirect():
-		ext = openrtb.Extension(`{"type":"pop"}`)
+		if imp.Interstitial == 0 {
+			ext = openrtb.Extension(`{"type":"pop"}`)
+		}
+	case format.IsVideo():
+		video = &openrtb.Video{
+			Mimes:         []string{"video/mp4", "video/webm"},
+			MinDuration:   0,
+			MaxDuration:   0,
+			Protocols:     nil,
+			W:             imp.Width,
+			H:             imp.Height,
+			Pos:           imp.Pos,
+			StartDelay:    0,
+			Linearity:     0,
+			Skip:          1,
+			SkipMin:       0,
+			SkipAfter:     3,
+			BAttr:         nil,
+			BoxingAllowed: &[]int{1}[0],
+			MaxExtended:   0,
+			Ext:           nil,
+		}
 	default:
 		return nil
 	}
 
-	tagid := imp.Target.Codename() + "_" + format.Codename
+	// tagid := imp.Target.Codename() + "_" + format.Codename
 	return &openrtb.Impression{
 		ID:                imp.IDByFormat(format),
 		Banner:            banner,
@@ -104,8 +125,8 @@ func openrtbV2ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression
 		Native:            native,
 		DisplayManager:    "",                                            // Name of ad mediation partner, SDK technology, etc
 		DisplayManagerVer: "",                                            // Version of the above
-		Instl:             b2i(imp.IsDirect()),                           // Interstitial, Default: 0 ("1": Interstitial, "0": Something else)
-		TagID:             tagid,                                         // IDentifier for specific ad placement or ad tag
+		Instl:             imp.Interstitial,                              // Interstitial, Default: 0 ("1": Interstitial, "0": Something else)
+		TagID:             imp.Target.Codename(),                         // IDentifier for specific ad placement or ad tag
 		BidFloor:          max(imp.BidFloorCPM.Float64(), opts.BidFloor), // Bid floor for this impression in CPM
 		BidFloorCurrency:  "",                                            // Currency of bid floor
 		Secure:            openrtb.NumberOrString(b2i(req.IsSecure())),   // Flag to indicate whether the impression requires secure HTTPS URL creative assets and markup.

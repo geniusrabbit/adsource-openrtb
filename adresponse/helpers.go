@@ -14,12 +14,15 @@ import (
 
 func decodePopMarkup(data []byte) (val string, err error) {
 	var item struct {
-		URL string `xml:"popunderAd>url"`
+		URL1 string `xml:"popunderAd>url"`
+		URL2 string `xml:"ad>popunderAd>url"`
 	}
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	decoder.CharsetReader = charset.NewReaderLabel
 	if err = decoder.Decode(&item); err == nil {
-		val = item.URL
+		if val = item.URL1; val == "" {
+			val = item.URL2
+		}
 	}
 	return val, err
 }

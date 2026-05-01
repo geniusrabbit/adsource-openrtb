@@ -257,7 +257,7 @@ func (d *driver) ProcessResponseItem(response adtype.Response, item adtype.Respo
 	}
 	for _, ad := range response.Ads() {
 		switch bid := ad.(type) {
-		case *adresponse.ResponseBidItem:
+		case adtype.ResponseItem:
 			if bid.Source().ID() != d.ID() {
 				ctxlogger.Get(response.Context()).Debug("bid source mismatch",
 					zap.Uint64("source_id", bid.Source().ID()),
@@ -265,9 +265,9 @@ func (d *driver) ProcessResponseItem(response adtype.Response, item adtype.Respo
 				)
 				continue
 			}
-			if len(bid.Bid.NURL) > 0 {
-				ctxlogger.Get(response.Context()).Info("ping", zap.String("url", bid.Bid.NURL))
-				err := eventstream.WinsFromContext(response.Context()).Send(response.Context(), bid.Bid.NURL)
+			if nurl := bid.ContentItemString(adtype.ContentItemNotifyDisplayURL); nurl != "" {
+				ctxlogger.Get(response.Context()).Info("ping", zap.String("url", nurl))
+				err := eventstream.WinsFromContext(response.Context()).Send(response.Context(), nurl)
 				if err != nil {
 					ctxlogger.Get(response.Context()).Error("ping error", zap.Error(err))
 				}

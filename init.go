@@ -85,7 +85,7 @@ func (*factory) Info() info.Platform {
 		Name:        "OpenRTB",
 		Protocol:    protocol,
 		Versions:    []string{"2.3", "2.4", "2.5", "2.6", "3.0"},
-		Description: "",
+		Description: "OpenRTB (Real-Time Bidding) protocol for programmatic advertising exchanges and demand-side platforms (DSPs) to facilitate real-time bidding on ad inventory.",
 		Docs: []info.Documentation{
 			{
 				Title: "OpenRTB (Real-Time Bidding)",
@@ -94,8 +94,10 @@ func (*factory) Info() info.Platform {
 		},
 		Subprotocols: []info.Subprotocol{
 			{
-				Name:     "VAST",
-				Protocol: "vast",
+				Name:        "VAST",
+				Protocol:    "vast",
+				Description: "Partial implementation of the VAST protocol for video ad markup",
+				Versions:    []string{"2.0", "3.0", "4.0", "4.1", "4.2"},
 				Docs: []info.Documentation{
 					{
 						Title: "Digital Video Ad Serving Template (VAST)",
@@ -104,9 +106,10 @@ func (*factory) Info() info.Platform {
 				},
 			},
 			{
-				Name:     "OpenNative",
-				Protocol: "opennative",
-				Versions: []string{"1.1", "1.2"},
+				Name:        "OpenNative",
+				Protocol:    "opennative",
+				Description: "Partial implementation of the OpenRTB Native Ads protocol",
+				Versions:    []string{"1.1", "1.2"},
 				Docs: []info.Documentation{
 					{
 						Title: "OpenRTB Native Ads Specification 1.1",
