@@ -1,8 +1,9 @@
-package adresponse
+package interstitial
 
 import "testing"
 
-func TestParseInterstitialAdMarkup(t *testing.T) {
+// TestParseAdMarkup verifies that ParseAdMarkup correctly parses various XML ad markup formats.
+func TestParseAdMarkup(t *testing.T) {
 	tests := []struct {
 		name      string
 		adMarkup  string
@@ -83,19 +84,19 @@ func TestParseInterstitialAdMarkup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotURL, gotClick, gotImg, err := parseInterstitialAdMarkup(tt.adMarkup)
+			gotURL, gotClick, gotImg, err := ParseAdMarkup(tt.adMarkup)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("parseInterstitialAdMarkup() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ParseAdMarkup() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotURL != tt.wantURL {
-				t.Errorf("parseInterstitialAdMarkup() gotURL = %v, want %v", gotURL, tt.wantURL)
+				t.Errorf("ParseAdMarkup() gotURL = %v, want %v", gotURL, tt.wantURL)
 			}
 			if gotClick != tt.wantClick {
-				t.Errorf("parseInterstitialAdMarkup() gotClick = %v, want %v", gotClick, tt.wantClick)
+				t.Errorf("ParseAdMarkup() gotClick = %v, want %v", gotClick, tt.wantClick)
 			}
 			if gotImg != tt.wantImg {
-				t.Errorf("parseInterstitialAdMarkup() gotImg = %v, want %v", gotImg, tt.wantImg)
+				t.Errorf("ParseAdMarkup() gotImg = %v, want %v", gotImg, tt.wantImg)
 			}
 		})
 	}

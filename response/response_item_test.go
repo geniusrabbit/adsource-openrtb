@@ -1,4 +1,9 @@
-package adresponse
+//
+// @project GeniusRabbit corelib 2017 - 2019, 2025
+// @author Dmitry Ponomarev <demdxx@gmail.com> 2017 - 2019, 2025
+//
+
+package response
 
 import (
 	"reflect"
@@ -12,6 +17,8 @@ import (
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/billing"
 	"github.com/geniusrabbit/adcorelib/price"
+
+	"github.com/geniusrabbit/adsource-openrtb/response/banner"
 )
 
 func TestItemPricing(t *testing.T) {
@@ -46,8 +53,8 @@ func TestItemPricing(t *testing.T) {
 	}
 }
 
-func newRTBResponse(_ *admodels.Account, imp *adtype.Impression) *ResponseBannerBidItem {
-	return &ResponseBannerBidItem{
+func newRTBResponse(_ *admodels.Account, imp *adtype.Impression) *banner.ResponseBidItem {
+	return &banner.ResponseBidItem{
 		ItemID:   "1",
 		Src:      &adtype.SourceEmpty{PriceCorrectionReduce: 0},
 		Req:      &bidrequest.BidRequest{IDVal: "xxx", Imps: []*adtype.Impression{imp}},

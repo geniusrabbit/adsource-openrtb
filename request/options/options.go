@@ -1,10 +1,21 @@
-package adsourceopenrtb
+package requestoptions
 
 import (
 	"time"
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
+	"github.com/geniusrabbit/adcorelib/adtype"
 )
+
+// RTBRequest is the minimal interface shared by both OpenRTB v2 and v3 bid-request types.
+type RTBRequest interface {
+	Validate() error
+}
+
+// RequestBuilder constructs a protocol-specific RTB bid request from an adtype.BidRequester.
+type RequestBuilder interface {
+	Build(req adtype.BidRequester, opts ...BidRequestRTBOption) (RTBRequest, error)
+}
 
 // BidRequestRTBOptions of request build
 type BidRequestRTBOptions struct {
@@ -18,11 +29,11 @@ type BidRequestRTBOptions struct {
 	BidFloor     float64
 }
 
-func (opts *BidRequestRTBOptions) openNativeVer() string {
+func (opts *BidRequestRTBOptions) OpenNativeVer() string {
 	return opts.OpenNative.Ver
 }
 
-func (opts *BidRequestRTBOptions) currencies() []string {
+func (opts *BidRequestRTBOptions) Currencies() []string {
 	if len(opts.Currency) > 0 {
 		return opts.Currency
 	}

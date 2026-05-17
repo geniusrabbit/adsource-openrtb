@@ -1,4 +1,4 @@
-package adsourceopenrtb
+package v2
 
 import (
 	"encoding/json"
@@ -10,10 +10,23 @@ import (
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adtype"
+
+	requestoptions "github.com/geniusrabbit/adsource-openrtb/request/options"
 )
 
-func requestToRTBv2(req adtype.BidRequester, opts ...BidRequestRTBOption) *openrtb.BidRequest {
-	var opt BidRequestRTBOptions
+// Builder constructs OpenRTB v2 bid requests.
+type Builder struct{}
+
+// New returns a new Builder.
+func New() *Builder { return &Builder{} }
+
+// Build constructs an OpenRTB v2 bid request and returns it as requestoptions.RTBRequest.
+func (b *Builder) Build(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (requestoptions.RTBRequest, error) {
+	return requestToRTBv2(req, opts...), nil
+}
+
+func requestToRTBv2(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) *openrtb.BidRequest {
+	var opt requestoptions.BidRequestRTBOptions
 	for _, fn := range opts {
 		fn(&opt)
 	}
@@ -28,7 +41,7 @@ func requestToRTBv2(req adtype.BidRequester, opts ...BidRequestRTBOption) *openr
 		TMax:        int(opt.TimeMax.Milliseconds()), // Maximum amount of time in milliseconds to submit a bid
 		WSeat:       nil,                             // Array of buyer seats allowed to bid on this auction
 		AllImps:     0,                               //
-		Cur:         opt.currencies(),                // Array of allowed currencies
+		Cur:         opt.Currencies(),                // Array of allowed currencies
 		Bcat:        nil,                             // Blocked Advertiser Categories
 		BAdv:        nil,                             // Array of strings of blocked toplevel domains of advertisers
 		Regs:        nil,
@@ -36,7 +49,7 @@ func requestToRTBv2(req adtype.BidRequester, opts ...BidRequestRTBOption) *openr
 	}
 }
 
-func openrtbV2Impressions(req adtype.BidRequester, opts *BidRequestRTBOptions) (list []openrtb.Impression) {
+func openrtbV2Impressions(req adtype.BidRequester, opts *requestoptions.BidRequestRTBOptions) (list []openrtb.Impression) {
 	for _, imp := range req.Impressions() {
 		for _, format := range imp.Formats() {
 			if openRTBImp := openrtbV2ImpressionByFormat(req, imp, format, opts); openRTBImp != nil {
@@ -47,7 +60,7 @@ func openrtbV2Impressions(req adtype.BidRequester, opts *BidRequestRTBOptions) (
 	return list
 }
 
-func openrtbV2ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression, format *types.Format, opts *BidRequestRTBOptions) *openrtb.Impression {
+func openrtbV2ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression, format *types.Format, opts *requestoptions.BidRequestRTBOptions) *openrtb.Impression {
 	var (
 		banner *openrtb.Banner
 		video  *openrtb.Video
@@ -85,7 +98,7 @@ func openrtbV2ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression
 	case format.IsNative():
 		native = &openrtb.Native{
 			Request: openrtbV2NativeRequest(req, imp, format, opts),
-			Ver:     opts.openNativeVer(),
+			Ver:     opts.OpenNativeVer(),
 			API:     nil,
 			BAttr:   nil,
 			Ext:     nil,
@@ -117,7 +130,6 @@ func openrtbV2ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression
 		return nil
 	}
 
-	// tagid := imp.Target.Codename() + "_" + format.Codename
 	return &openrtb.Impression{
 		ID:                imp.IDByFormat(format),
 		Banner:            banner,
@@ -130,13 +142,13 @@ func openrtbV2ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression
 		BidFloor:          max(imp.BidFloorCPM.Float64(), opts.BidFloor), // Bid floor for this impression in CPM
 		BidFloorCurrency:  "",                                            // Currency of bid floor
 		Secure:            openrtb.NumberOrString(b2i(req.IsSecure())),   // Flag to indicate whether the impression requires secure HTTPS URL creative assets and markup.
-		IFrameBuster:      nil,                                           // Array of names for supportediframe busters.
+		IFrameBuster:      nil,                                           // Array of names for supported iframe busters.
 		Pmp:               nil,                                           // A reference to the PMP object containing any Deals eligible for the impression object.
 		Ext:               ext,
 	}
 }
 
-func openrtbV2NativeRequest(req adtype.BidRequester, imp *adtype.Impression, format *types.Format, opts *BidRequestRTBOptions) openrtb.Extension {
+func openrtbV2NativeRequest(req adtype.BidRequester, imp *adtype.Impression, format *types.Format, opts *requestoptions.BidRequestRTBOptions) openrtb.Extension {
 	var (
 		nativePrepared []byte
 		native         *openrtbnreq.Request
@@ -144,7 +156,7 @@ func openrtbV2NativeRequest(req adtype.BidRequester, imp *adtype.Impression, for
 
 	if native = imp.RTBNativeRequest(); native == nil {
 		native = &openrtbnreq.Request{
-			Ver:              opts.openNativeVer(),                    // Version of the Native Markup
+			Ver:              opts.OpenNativeVer(),                    // Version of the Native Markup
 			LayoutID:         0,                                       // DEPRECATED The Layout ID of the native ad
 			AdUnitID:         0,                                       // DEPRECATED The Ad unit ID of the native ad
 			ContextTypeID:    imp.ContextType(),                       // The context in which the ad appears
@@ -158,8 +170,6 @@ func openrtbV2NativeRequest(req adtype.BidRequester, imp *adtype.Impression, for
 	}
 
 	nativePrepared, _ = json.Marshal(native)
-
-	// We have to encode it as a JSON string
 	nativePrepared, _ = json.Marshal(`{"native":` + string(nativePrepared) + `}`)
 
 	return openrtb.Extension(nativePrepared)
@@ -169,7 +179,6 @@ func openrtbV2NativeAssets(req adtype.BidRequester, imp *adtype.Impression, form
 	assets := make([]openrtbnreq.Asset, 0, len(format.Config.Assets)+len(format.Config.Fields))
 	for _, asset := range format.Config.Assets {
 		if !asset.IsVideoSupport() || asset.IsImageSupport() {
-			// By default we suppose that this is image
 			var typeid openrtbnreq.ImageTypeID
 			switch asset.Name {
 			case types.FormatAssetMain:
@@ -212,73 +221,49 @@ func openrtbV2NativeFieldAsset(field *types.FormatField) (openrtbnreq.Asset, boo
 		return openrtbnreq.Asset{
 			ID:       field.ID,
 			Required: b2i(field.Required),
-			Data: &openrtbnreq.Data{
-				TypeID: openrtbnreq.DataTypeDesc,
-				Length: field.MaxLength(),
-			},
+			Data:     &openrtbnreq.Data{TypeID: openrtbnreq.DataTypeDesc, Length: field.MaxLength()},
 		}, true
 	case types.FormatFieldBrandname:
 		return openrtbnreq.Asset{
 			ID:       field.ID,
 			Required: b2i(field.Required),
-			Data: &openrtbnreq.Data{
-				TypeID: openrtbnreq.DataTypeSponsored,
-				Length: field.MaxLength(),
-			},
+			Data:     &openrtbnreq.Data{TypeID: openrtbnreq.DataTypeSponsored, Length: field.MaxLength()},
 		}, true
 	case types.FormatFieldPhone:
 		return openrtbnreq.Asset{
 			ID:       field.ID,
 			Required: b2i(field.Required),
-			Data: &openrtbnreq.Data{
-				TypeID: openrtbnreq.DataTypePhone,
-				Length: field.MaxLength(),
-			},
+			Data:     &openrtbnreq.Data{TypeID: openrtbnreq.DataTypePhone, Length: field.MaxLength()},
 		}, true
 	case types.FormatFieldURL:
 		return openrtbnreq.Asset{
 			ID:       field.ID,
 			Required: b2i(field.Required),
-			Data: &openrtbnreq.Data{
-				TypeID: openrtbnreq.DataTypeDisplayURL,
-				Length: field.MaxLength(),
-			},
+			Data:     &openrtbnreq.Data{TypeID: openrtbnreq.DataTypeDisplayURL, Length: field.MaxLength()},
 		}, true
 	case types.FormatFieldRating:
 		return openrtbnreq.Asset{
 			ID:       field.ID,
 			Required: b2i(field.Required),
-			Data: &openrtbnreq.Data{
-				TypeID: openrtbnreq.DataTypeRating,
-				Length: field.MaxLength(),
-			},
+			Data:     &openrtbnreq.Data{TypeID: openrtbnreq.DataTypeRating, Length: field.MaxLength()},
 		}, true
 	case types.FormatFieldLikes:
 		return openrtbnreq.Asset{
 			ID:       field.ID,
 			Required: b2i(field.Required),
-			Data: &openrtbnreq.Data{
-				TypeID: openrtbnreq.DataTypeLikes,
-				Length: field.MaxLength(),
-			},
+			Data:     &openrtbnreq.Data{TypeID: openrtbnreq.DataTypeLikes, Length: field.MaxLength()},
 		}, true
 	case types.FormatFieldAddress:
 		return openrtbnreq.Asset{
 			ID:       field.ID,
 			Required: b2i(field.Required),
-			Data: &openrtbnreq.Data{
-				TypeID: openrtbnreq.DataTypeAddress,
-				Length: field.MaxLength(),
-			},
+			Data:     &openrtbnreq.Data{TypeID: openrtbnreq.DataTypeAddress, Length: field.MaxLength()},
 		}, true
 	case types.FormatFieldSponsored:
 		return openrtbnreq.Asset{
 			ID:       field.ID,
 			Required: b2i(field.Required),
-			Data: &openrtbnreq.Data{
-				TypeID: openrtbnreq.DataTypeSponsored,
-				Length: field.MaxLength(),
-			},
+			Data:     &openrtbnreq.Data{TypeID: openrtbnreq.DataTypeSponsored, Length: field.MaxLength()},
 		}, true
 	}
 	return openrtbnreq.Asset{}, false
@@ -296,17 +281,29 @@ func uopenrtbOpenrtbV2UserInfo(u *adtype.User) *openrtb.User {
 		}
 		data = append(data, dataItem)
 	}
-
 	return &openrtb.User{
 		ID:         u.ID,       // Unique consumer ID of this user on the exchange
-		BuyerID:    "",         // Buyer-specific ID for the user as mapped by the exchange for the buyer. At least one of buyeruid/buyerid or id is recommended. Valid for OpenRTB 2.3.
-		BuyerUID:   "",         // Buyer-specific ID for the user as mapped by the exchange for the buyer. Same as BuyerID but valid for OpenRTB 2.2.
+		BuyerID:    "",         // Buyer-specific ID for the user as mapped by the exchange for the buyer.
+		BuyerUID:   "",         // Buyer-specific ID for the user as mapped by the exchange for the buyer.
 		YOB:        0,          // Year of birth as a 4-digit integer.
 		Gender:     u.Gender,   // Gender ("M": male, "F" female, "O" Other)
 		Keywords:   u.Keywords, // Comma separated list of keywords, interests, or intent
-		CustomData: "",         // Optional feature to pass bidder data that was set in the exchange's cookie. The string must be in base85 cookie safe characters and be in any format. Proper JSON encoding must be used to include "escaped" quotation marks.
+		CustomData: "",         // Optional feature to pass bidder data set in the exchange's cookie.
 		Geo:        uopenrtb.GeoFrom(u.Geo),
 		Data:       data,
 		Ext:        nil,
 	}
 }
+
+//go:inline
+func b2i(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func intRef(v int) *int { return &v }
+
+// Ensure intRef is referenced to avoid "declared and not used" if it's only used in v3.
+var _ = intRef

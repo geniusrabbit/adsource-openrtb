@@ -2,61 +2,47 @@
 // @project GeniusRabbit corelib 2017 - 2019, 2025
 // @author Dmitry Ponomarev <demdxx@gmail.com> 2017 - 2019, 2025
 //
-// This file is part of the GeniusRabbit corelib project.
-//
-// VAST bid item for the ad response. This struct represents a bid item that contains information about the bid, impression, source, and other relevant data needed to process and display the advertisement in VAST format.
-// The ResponseVASTBidItem struct implements the adtype.ResponseItem interface, which defines the methods required for handling ad response items in the system. This struct is specifically designed to handle VAST format bids and includes methods for retrieving content, tracking links, assets, pricing information, and other relevant data for processing the advertisement.
+
+// Package vast implements the OpenRTB bid response item for VAST video ad formats.
+// VAST (Video Ad Serving Template) bids deliver an XML document describing
+// video creatives, tracking events, and click-through URLs.
 //
 // VAST Example:
-// ```xml
-// <VAST version="4.0">
-//   <Ad id="12345">
-//     <InLine>
-//       <AdTitle>Sample VAST Ad</AdTitle>
-//       <Creatives>
-//         <Creative>
-//           <Linear>
-//             <Duration>00:00:30</Duration>
-//             <MediaFiles>
-//               <MediaFile delivery="progressive" type="video/mp4" width="640" height="360">
-//                 <![CDATA[https://example.com/video.mp4]]>
-//               </MediaFile>
-//             </MediaFiles>
-//             <VideoClicks>
-//               <ClickThrough><![CDATA[https://example.com/click]]></ClickThrough>
-//             </VideoClicks>
-//           </Linear>
-//         </Creative>
-//       </Creatives>
-//     </InLine>
-//   </Ad>
-// </VAST>
 //
-// In this example, the VAST XML defines a single ad with an inline creative that includes a video media file and a click-through URL.
-//
-// Params:
-// - VASTAdTagURI - The URI of the VAST ad tag, which is used to retrieve the VAST XML for the ad.
-// - AdTitle - The title of the ad, which is used for display purposes.
-// - Creatives - The creative elements of the ad, which include the media files and tracking information.
-// - Duration - The duration of the video ad.
-// - MediaFiles - The media files associated with the ad, including their delivery method, type, and dimensions.
-// - VideoClicks - The click-through URLs for the video ad.
-//
-// The ResponseVASTBidItem struct provides methods to access this information and process the VAST bid accordingly.
-
-package adresponse
+//	<VAST version="4.0">
+//	  <Ad id="12345">
+//	    <InLine>
+//	      <AdTitle>Sample VAST Ad</AdTitle>
+//	      <Creatives>
+//	        <Creative>
+//	          <Linear>
+//	            <Duration>00:00:30</Duration>
+//	            <MediaFiles>
+//	              <MediaFile delivery="progressive" type="video/mp4" width="640" height="360">
+//	                <![CDATA[https://example.com/video.mp4]]>
+//	              </MediaFile>
+//	            </MediaFiles>
+//	            <VideoClicks>
+//	              <ClickThrough><![CDATA[https://example.com/click]]></ClickThrough>
+//	            </VideoClicks>
+//	          </Linear>
+//	        </Creative>
+//	      </Creatives>
+//	    </InLine>
+//	  </Ad>
+//	</VAST>
+package vast
 
 import (
 	"context"
 	"strings"
 	"time"
 
+	"github.com/bsm/openrtb"
 	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/xtypes"
 	"github.com/haxqer/vast"
 	"go.uber.org/zap"
-
-	"github.com/bsm/openrtb"
 
 	"github.com/geniusrabbit/adcorelib/admodels"
 	"github.com/geniusrabbit/adcorelib/admodels/types"
@@ -66,8 +52,10 @@ import (
 	"github.com/geniusrabbit/adcorelib/price"
 )
 
-// ResponseVASTBidItem represents a bid item for VAST format in the ad response. It contains information about the bid, impression, source, and other relevant data needed to process and display the advertisement.
-type ResponseVASTBidItem struct {
+// ResponseBidItem is the bid response item for VAST video ad formats.
+// It implements [adtype.ResponseItem] and provides access to the decoded VAST
+// document, media assets, trackers, and pricing information.
+type ResponseBidItem struct {
 	ItemID string `json:"id"`
 
 	// Request and impression data
@@ -90,7 +78,7 @@ type ResponseVASTBidItem struct {
 
 	Data map[string]any `json:"data,omitempty"`
 
-	// Tracking links for impression and click actions
+	// Tracking links for impression, view and click actions
 	impressionTrackers []string
 	clickTrackers      []string
 	viewTrackers       []string
@@ -99,20 +87,18 @@ type ResponseVASTBidItem struct {
 	context context.Context
 }
 
-func newResponseVASTBidItem(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adtype.Impression, format *types.Format) (*ResponseVASTBidItem, error) {
-	// Calculate the bid price and set up the price scope for the bid item
+// New creates a ResponseBidItem for a VAST bid. It decodes and validates the
+// XML VAST markup from the OpenRTB Bid, extracts tracking URLs and media assets.
+func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adtype.Impression, format *types.Format) (*ResponseBidItem, error) {
 	cpmPrice := billing.MoneyFloat(bid.Price)
-
-	// Set the bid item properties
 	priceScope := price.PriceScopeImpression{
 		MaxBidImpPrice: 0,
 		BidImpPrice:    0,
-		ImpPrice:       cpmPrice / 1000, // Convert from micros (CPM) to actual price
-		ECPM:           cpmPrice,        // Original eCPM price
+		ImpPrice:       cpmPrice / 1000, // Convert CPM to per-impression price
+		ECPM:           cpmPrice,
 	}
 
-	// Handle direct response format (like click URLs)
-	bidItem := &ResponseVASTBidItem{
+	bidItem := &ResponseBidItem{
 		ItemID:     imp.ID,
 		Src:        src,
 		Req:        req,
@@ -123,10 +109,8 @@ func newResponseVASTBidItem(req adtype.BidRequester, src adtype.Source, bid *ope
 		PriceScope: priceScope,
 	}
 
-	// Handle video ad format (VAST)
 	vastAd, err := unmarshalVAST([]byte(bid.AdMarkup))
 	if err != nil {
-		// Log VAST decoding failures
 		ctxlogger.Get(req.Context()).Debug(
 			"Failed to decode VAST markup",
 			zap.String("markup", bid.AdMarkup),
@@ -134,7 +118,6 @@ func newResponseVASTBidItem(req adtype.BidRequester, src adtype.Source, bid *ope
 		)
 	}
 	if err := validateVAST(vastAd); err != nil {
-		// Log invalid VAST responses
 		ctxlogger.Get(req.Context()).Debug(
 			"Invalid VAST response",
 			zap.String("markup", bid.AdMarkup),
@@ -143,7 +126,7 @@ func newResponseVASTBidItem(req adtype.BidRequester, src adtype.Source, bid *ope
 		return nil, err
 	}
 
-	// Set the bid impression price based on the bid price and impression
+	bidItem.VAST = vastAd
 	bidItem.PriceScope.MaxBidImpPrice = price.CalculatePurchasePrice(bidItem, adtype.ActionImpression)
 
 	// Extract tracking links from the VAST response
@@ -199,7 +182,6 @@ func newResponseVASTBidItem(req adtype.BidRequester, src adtype.Source, bid *ope
 				ContentType: "application/xml",
 			},
 		}
-
 		for _, creative := range vastAd.Ads[0].Wrapper.Creatives {
 			if creative.Linear == nil || creative.Linear.Icons == nil {
 				continue
@@ -214,31 +196,31 @@ func newResponseVASTBidItem(req adtype.BidRequester, src adtype.Source, bid *ope
 	return bidItem, nil
 }
 
-// ID of current response item (unique code of current response)
-func (it *ResponseVASTBidItem) ID() string {
+// ID returns the unique identifier of the response item.
+func (it *ResponseBidItem) ID() string {
 	return it.ItemID
 }
 
-// Source of response
-func (it *ResponseVASTBidItem) Source() adtype.Source {
+// Source returns the ad source associated with this bid.
+func (it *ResponseBidItem) Source() adtype.Source {
 	return it.Src
 }
 
-// NetworkName by source
-func (it *ResponseVASTBidItem) NetworkName() string {
+// NetworkName returns the network name for this source (always empty for RTB).
+func (it *ResponseBidItem) NetworkName() string {
 	return ""
 }
 
-// ContentItemString from the ad
-func (it *ResponseVASTBidItem) ContentItemString(name string) string {
+// ContentItemString returns the string value of a named content field.
+func (it *ResponseBidItem) ContentItemString(name string) string {
 	if val := it.ContentItem(name); val != nil {
 		return gocast.Str(val)
 	}
 	return ""
 }
 
-// ContentItem returns the ad response data
-func (it *ResponseVASTBidItem) ContentItem(name string) any {
+// ContentItem returns the ad response data for the given field name.
+func (it *ResponseBidItem) ContentItem(name string) any {
 	if it.Data != nil {
 		return it.Data[name]
 	}
@@ -278,28 +260,28 @@ func (it *ResponseVASTBidItem) ContentItem(name string) any {
 	return nil
 }
 
-// ContentFields from advertisement object
-func (it *ResponseVASTBidItem) ContentFields() map[string]any {
+// ContentFields returns a map of all populated content fields (nil for VAST format).
+func (it *ResponseBidItem) ContentFields() map[string]any {
 	return nil
 }
 
-// ImpressionTrackerLinks returns traking links for impression action
-func (it *ResponseVASTBidItem) ImpressionTrackerLinks() []string {
+// ImpressionTrackerLinks returns tracking links fired on impression.
+func (it *ResponseBidItem) ImpressionTrackerLinks() []string {
 	return it.impressionTrackers
 }
 
-// ViewTrackerLinks returns traking links for view action
-func (it *ResponseVASTBidItem) ViewTrackerLinks() []string {
+// ViewTrackerLinks returns tracking links fired on viewable impression.
+func (it *ResponseBidItem) ViewTrackerLinks() []string {
 	return it.viewTrackers
 }
 
-// ClickTrackerLinks returns third-party tracker URLs to be fired on click of the URL
-func (it *ResponseVASTBidItem) ClickTrackerLinks() []string {
+// ClickTrackerLinks returns third-party tracker URLs fired on click.
+func (it *ResponseBidItem) ClickTrackerLinks() []string {
 	return it.clickTrackers
 }
 
-// MainAsset from response
-func (it *ResponseVASTBidItem) MainAsset() *admodels.AdFileAsset {
+// MainAsset returns the primary file asset, matched by the format configuration.
+func (it *ResponseBidItem) MainAsset() *admodels.AdFileAsset {
 	mainAsset := it.Format().Config.MainAsset()
 	if mainAsset == nil {
 		return nil
@@ -312,21 +294,22 @@ func (it *ResponseVASTBidItem) MainAsset() *admodels.AdFileAsset {
 	return nil
 }
 
-// Assets returns list of the advertisement
-func (it *ResponseVASTBidItem) Assets() admodels.AdFileAssets {
+// Assets returns the list of file assets associated with this bid item.
+func (it *ResponseBidItem) Assets() admodels.AdFileAssets {
 	return it.assets
 }
 
-// Format object model
-func (it *ResponseVASTBidItem) Format() *types.Format {
+// Format returns the matched format object for this bid item.
+func (it *ResponseBidItem) Format() *types.Format {
 	if it == nil {
 		return nil
 	}
 	return it.RespFormat
 }
 
-// PriorityFormatType from current Ad
-func (it *ResponseVASTBidItem) PriorityFormatType() types.FormatType {
+// PriorityFormatType returns FormatVideoType for VAST bids when set; otherwise
+// derives the type from the impression format types.
+func (it *ResponseBidItem) PriorityFormatType() types.FormatType {
 	if it.FormatType != types.FormatUndefinedType {
 		return it.FormatType
 	}
@@ -337,52 +320,52 @@ func (it *ResponseVASTBidItem) PriorityFormatType() types.FormatType {
 	return format.FirstType()
 }
 
-// Impression place object
-func (it *ResponseVASTBidItem) Impression() *adtype.Impression {
+// Impression returns the impression object associated with this bid item.
+func (it *ResponseBidItem) Impression() *adtype.Impression {
 	return it.Imp
 }
 
-// ImpressionID unique code string
-func (it *ResponseVASTBidItem) ImpressionID() string {
+// ImpressionID returns the unique impression identifier.
+func (it *ResponseBidItem) ImpressionID() string {
 	if it.Imp == nil {
 		return ""
 	}
 	return it.Imp.ID
 }
 
-// ExtImpressionID unique code of RTB response
-func (it *ResponseVASTBidItem) ExtImpressionID() string {
+// ExtImpressionID returns the external (RTB) impression identifier.
+func (it *ResponseBidItem) ExtImpressionID() string {
 	if it.Imp == nil {
 		return ""
 	}
 	return it.Imp.ExternalID
 }
 
-// ExtTargetID of the external network
-func (it *ResponseVASTBidItem) ExtTargetID() string {
+// ExtTargetID returns the external target identifier.
+func (it *ResponseBidItem) ExtTargetID() string {
 	return it.Imp.ExternalTargetID
 }
 
-// TargetCodename of the target placement codename
-func (it *ResponseVASTBidItem) TargetCodename() string {
+// TargetCodename returns the codename of the target placement.
+func (it *ResponseBidItem) TargetCodename() string {
 	return it.Imp.TargetCodename()
 }
 
-// AdID returns the advertisement ID of the system
-func (it *ResponseVASTBidItem) AdID() string {
+// AdID returns the system advertisement ID (always empty for RTB).
+func (it *ResponseBidItem) AdID() string {
 	return ""
 }
 
-// CreativeID of the external advertisement
-func (it *ResponseVASTBidItem) CreativeID() string {
+// CreativeID returns the creative ID from the RTB bid.
+func (it *ResponseBidItem) CreativeID() string {
 	if it == nil || it.Bid == nil {
 		return ""
 	}
 	return it.Bid.CreativeID
 }
 
-// AccountID returns the account ID of the source
-func (it *ResponseVASTBidItem) AccountID() uint64 {
+// AccountID returns the account ID from the ad source.
+func (it *ResponseBidItem) AccountID() uint64 {
 	if it.Src != nil {
 		type accountIDGetter interface {
 			AccountID() uint64
@@ -394,8 +377,8 @@ func (it *ResponseVASTBidItem) AccountID() uint64 {
 	return 0
 }
 
-// CampaignID returns the campaign ID of the system
-func (it *ResponseVASTBidItem) CampaignID() uint64 {
+// CampaignID returns the campaign ID (always 0 for RTB sources).
+func (it *ResponseBidItem) CampaignID() uint64 {
 	return 0
 }
 
@@ -403,101 +386,96 @@ func (it *ResponseVASTBidItem) CampaignID() uint64 {
 // Price calculation methods
 ///////////////////////////////////////////////////////////////////////////////
 
-// PricingModel of advertisement
-// In case of RTB it can be CPM only
-func (it *ResponseVASTBidItem) PricingModel() types.PricingModel {
+// PricingModel returns CPM as the pricing model for all RTB VAST bids.
+func (it *ResponseBidItem) PricingModel() types.PricingModel {
 	return types.PricingModelCPM
 }
 
-// FixedPurchasePrice returns the fixed price of the action
-func (it *ResponseVASTBidItem) FixedPurchasePrice(action adtype.Action) billing.Money {
+// FixedPurchasePrice returns the fixed purchase price for the given action from the impression.
+func (it *ResponseBidItem) FixedPurchasePrice(action adtype.Action) billing.Money {
 	return it.Imp.PurchasePrice(action)
 }
 
-// ECPM returns the effective cost per mille
-func (it *ResponseVASTBidItem) ECPM() billing.Money {
+// ECPM returns the effective cost per mille for this bid.
+func (it *ResponseBidItem) ECPM() billing.Money {
 	if it == nil || it.Bid == nil {
 		return 0
 	}
 	return it.PriceScope.ECPM
 }
 
-// PriceTestMode returns true if the price is in test mode
-func (it *ResponseVASTBidItem) PriceTestMode() bool { return false }
+// PriceTestMode always returns false for RTB VAST bids.
+func (it *ResponseBidItem) PriceTestMode() bool { return false }
 
-// Price for specific action if supported `click`, `lead`, `view`
-// returns total price of the action
-func (it *ResponseVASTBidItem) Price(action adtype.Action) billing.Money {
+// Price returns the total price for the given action (impression, click, lead, view).
+func (it *ResponseBidItem) Price(action adtype.Action) billing.Money {
 	if it == nil || it.Bid == nil {
 		return 0
 	}
-	price := it.PriceScope.PricePerAction(action)
-	return price
+	return it.PriceScope.PricePerAction(action)
 }
 
-// BidViewPrice returns bid price for the external auction source.
-// The current bid price will be adjusted according to the source correction factor and the commission share factor
-func (it *ResponseVASTBidItem) BidImpressionPrice() billing.Money {
+// BidImpressionPrice returns the bid price that the system will pay for an impression.
+func (it *ResponseBidItem) BidImpressionPrice() billing.Money {
 	return it.PriceScope.BidImpPrice
 }
 
-// SetBidImpressionPrice value for external sources auction the system will pay
-func (it *ResponseVASTBidItem) SetBidImpressionPrice(bid billing.Money) error {
+// SetBidImpressionPrice sets the bid impression price. Returns an error if the new
+// price exceeds the maximum allowed bid price.
+func (it *ResponseBidItem) SetBidImpressionPrice(bid billing.Money) error {
 	if !it.PriceScope.SetBidImpressionPrice(bid, false) {
 		return adtype.ErrNewAuctionBidIsHigherThenMaxBid
 	}
 	return nil
 }
 
-// PrepareBidImpressionPrice prepares the price for the action
-// The price is adjusted according to the source correction factor and the commission share factor
-func (it *ResponseVASTBidItem) PrepareBidImpressionPrice(price billing.Money) billing.Money {
-	return it.PriceScope.PrepareBidImpressionPrice(price)
+// PrepareBidImpressionPrice adjusts the given price according to source correction
+// and commission factors.
+func (it *ResponseBidItem) PrepareBidImpressionPrice(p billing.Money) billing.Money {
+	return it.PriceScope.PrepareBidImpressionPrice(p)
 }
 
-// InternalAuctionCPMBid value provides maximal possible price without any commission
-// According to this value the system can choice the best item for the auction
-func (it *ResponseVASTBidItem) InternalAuctionCPMBid() billing.Money {
+// InternalAuctionCPMBid returns the maximal possible price without any commission.
+func (it *ResponseBidItem) InternalAuctionCPMBid() billing.Money {
 	return price.CalculateInternalAuctionBid(it)
 }
 
-// PurchasePrice gives the price of view from external resource.
-// The cost of this request for the system.
-func (it *ResponseVASTBidItem) PurchasePrice(action adtype.Action) billing.Money {
+// PurchasePrice returns the actual cost of the given action for the system.
+func (it *ResponseBidItem) PurchasePrice(action adtype.Action) billing.Money {
 	return price.CalculatePurchasePrice(it, action)
 }
 
-// PotentialPrice wich can be received from source but was marked as descrepancy
-func (it *ResponseVASTBidItem) PotentialPrice(action adtype.Action) billing.Money {
+// PotentialPrice returns the price that could have been received but was marked as discrepancy.
+func (it *ResponseBidItem) PotentialPrice(action adtype.Action) billing.Money {
 	return price.CalculatePotentialPrice(it, action)
 }
 
-// FinalPrice for the action with all corrections and commissions
-func (it *ResponseVASTBidItem) FinalPrice(action adtype.Action) billing.Money {
+// FinalPrice returns the price after all corrections and commissions for the given action.
+func (it *ResponseBidItem) FinalPrice(action adtype.Action) billing.Money {
 	return price.CalculateFinalPrice(it, action)
 }
 
-// Second campaigns
-func (it *ResponseVASTBidItem) Second() *adtype.SecondAd {
+// Second returns the competitive second ad slot.
+func (it *ResponseBidItem) Second() *adtype.SecondAd {
 	return &it.SecondAd
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Revenue share/comission methods
+// Revenue share / commission methods
 ///////////////////////////////////////////////////////////////////////////////
 
-// CommissionShareFactor which system get from publisher 0..1
-func (it *ResponseVASTBidItem) CommissionShareFactor() float64 {
+// CommissionShareFactor returns the commission fraction (0..1) taken from the publisher.
+func (it *ResponseBidItem) CommissionShareFactor() float64 {
 	return it.Imp.CommissionShareFactor()
 }
 
-// SourceCorrectionFactor value for the source
-func (it *ResponseVASTBidItem) SourceCorrectionFactor() float64 {
+// SourceCorrectionFactor returns the price correction factor for this RTB source.
+func (it *ResponseBidItem) SourceCorrectionFactor() float64 {
 	return it.Src.PriceCorrectionReduceFactor()
 }
 
-// TargetCorrectionFactor value for the target
-func (it *ResponseVASTBidItem) TargetCorrectionFactor() float64 {
+// TargetCorrectionFactor returns the revenue-share reduction factor for the target.
+func (it *ResponseBidItem) TargetCorrectionFactor() float64 {
 	return it.Imp.Target.RevenueShareReduceFactor()
 }
 
@@ -505,56 +483,56 @@ func (it *ResponseVASTBidItem) TargetCorrectionFactor() float64 {
 // Other methods
 ///////////////////////////////////////////////////////////////////////////////
 
-// RTBCategories of the advertisement
-func (it *ResponseVASTBidItem) RTBCategories() []string {
+// RTBCategories returns the IAB content categories declared in the bid.
+func (it *ResponseBidItem) RTBCategories() []string {
 	if it.Bid == nil {
 		return nil
 	}
 	return it.Bid.Cat
 }
 
-// IsDirect AD format
-func (it *ResponseVASTBidItem) IsDirect() bool {
+// IsDirect always returns false for VAST bid items.
+func (it *ResponseBidItem) IsDirect() bool {
 	return false
 }
 
-// IsBackup indicates whether the advertisement is a backup ad type.
-func (it *ResponseVASTBidItem) IsBackup() bool { return false }
+// IsBackup always returns false for VAST bid items.
+func (it *ResponseBidItem) IsBackup() bool { return false }
 
-// ActionURL for direct ADS
-func (it *ResponseVASTBidItem) ActionURL() string {
+// ActionURL returns the primary video click-through URL from the VAST document.
+func (it *ResponseBidItem) ActionURL() string {
 	if it.VAST.Ads[0].InLine != nil {
 		return it.VAST.Ads[0].InLine.Creatives[0].Linear.VideoClicks.ClickThroughs[0].URI
 	}
 	return it.VAST.Ads[0].Wrapper.Creatives[0].Linear.VideoClicks.ClickThroughs[0].URI
 }
 
-// Validate item
-func (it *ResponseVASTBidItem) Validate() error {
+// Validate checks that all required fields are populated.
+func (it *ResponseBidItem) Validate() error {
 	if it.Src == nil || it.Req == nil || it.Imp == nil || it.Bid == nil {
 		return adtype.ErrInvalidItemInitialisation
 	}
 	return it.Bid.Validate()
 }
 
-// Width of item
-func (it *ResponseVASTBidItem) Width() int {
+// Width returns the creative width in pixels.
+func (it *ResponseBidItem) Width() int {
 	if it.Bid == nil {
 		return 0
 	}
 	return it.Bid.W
 }
 
-// Height of item
-func (it *ResponseVASTBidItem) Height() int {
+// Height returns the creative height in pixels.
+func (it *ResponseBidItem) Height() int {
 	if it.Bid == nil {
 		return 0
 	}
 	return it.Bid.H
 }
 
-// Markup advertisement
-func (it *ResponseVASTBidItem) Markup() (string, error) {
+// Markup returns the rendered ad markup (empty for VAST; rendered by template engine).
+func (it *ResponseBidItem) Markup() (string, error) {
 	return "", nil
 }
 
@@ -562,22 +540,24 @@ func (it *ResponseVASTBidItem) Markup() (string, error) {
 // Context methods
 ///////////////////////////////////////////////////////////////////////////////
 
-// Context value
-func (it *ResponseVASTBidItem) Context(ctx ...context.Context) context.Context {
+// Context gets or sets the context associated with this bid item.
+func (it *ResponseBidItem) Context(ctx ...context.Context) context.Context {
 	if len(ctx) > 0 {
 		it.context = ctx[0]
 	}
 	return it.context
 }
 
-// Get ext field
-func (it *ResponseVASTBidItem) Get(key string) (res any) {
+// Get retrieves a value from the item context by key.
+func (it *ResponseBidItem) Get(key string) (res any) {
 	if it.context == nil {
 		return res
 	}
 	return it.context.Value(key)
 }
 
+// fileAssetsFromMediaFiles converts a slice of VAST [vast.MediaFile] descriptors
+// into [admodels.AdFileAssets], inferring asset type from the MIME type prefix.
 func fileAssetsFromMediaFiles(mediaFiles []vast.MediaFile, duration int) admodels.AdFileAssets {
 	assets := make(admodels.AdFileAssets, 0, len(mediaFiles))
 	for i, mediaFile := range mediaFiles {
@@ -604,6 +584,8 @@ func fileAssetsFromMediaFiles(mediaFiles []vast.MediaFile, duration int) admodel
 	return assets
 }
 
+// iconAssetsFromIcons converts a slice of VAST [vast.Icon] objects into
+// [admodels.AdFileAssets] with the image asset type.
 func iconAssetsFromIcons(icons []vast.Icon) admodels.AdFileAssets {
 	assets := make(admodels.AdFileAssets, 0, len(icons))
 	for i, icon := range icons {
@@ -626,5 +608,5 @@ func iconAssetsFromIcons(icons []vast.Icon) admodels.AdFileAssets {
 }
 
 var (
-	_ adtype.ResponseItem = &ResponseVASTBidItem{}
+	_ adtype.ResponseItem = &ResponseBidItem{}
 )

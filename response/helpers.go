@@ -1,4 +1,9 @@
-package adresponse
+//
+// @project GeniusRabbit corelib 2017 - 2019, 2025
+// @author Dmitry Ponomarev <demdxx@gmail.com> 2017 - 2019, 2025
+//
+
+package response
 
 import (
 	"bytes"
@@ -8,10 +13,10 @@ import (
 	"strings"
 
 	"golang.org/x/net/html/charset"
-
-	"github.com/geniusrabbit/adcorelib/admodels/types"
 )
 
+// decodePopMarkup extracts the popunder URL from an XML ad markup payload.
+// It supports two common XML structures: <popunderAd><url> and <ad><popunderAd><url>.
 func decodePopMarkup(data []byte) (val string, err error) {
 	var item struct {
 		URL1 string `xml:"popunderAd>url"`
@@ -27,6 +32,8 @@ func decodePopMarkup(data []byte) (val string, err error) {
 	return val, err
 }
 
+// customDirectURL extracts a direct landing page URL from a JSON ad markup payload.
+// It checks the "url", "landingpage", and "link" fields in order.
 func customDirectURL(data []byte) (val string, err error) {
 	var item struct {
 		URL         string `json:"url"`
@@ -39,16 +46,9 @@ func customDirectURL(data []byte) (val string, err error) {
 	return val, err
 }
 
-func bannerFormatType(markup string) types.FormatType {
-	if strings.HasPrefix(markup, "http://") ||
-		strings.HasPrefix(markup, "https://") ||
-		(strings.HasPrefix(markup, "//") && !strings.ContainsAny(markup, "\n\t")) ||
-		strings.Contains(markup, "<iframe") {
-		return types.FormatProxyType
-	}
-	return types.FormatBannerType
-}
-
+// prepareURL decodes percent-encoding from a URL string and applies the given
+// macro [strings.Replacer], returning the processed URL.
+// Returns an empty string if surl is empty.
 func prepareURL(surl string, replacer *strings.Replacer) string {
 	if surl == "" {
 		return surl
@@ -59,33 +59,34 @@ func prepareURL(surl string, replacer *strings.Replacer) string {
 	return replacer.Replace(surl)
 }
 
-// Example:
+// openNativeVASTTagInfo holds a subset of VAST 2.0 fields used for native ad
+// format detection (e.g., determining if a markup is a video ad tag).
 //
-// <VAST version=’2.0’>
+// Example VAST 2.0 wrapper:
 //
-//	<Ad id=’12345’>
-//	   <InLine>
+//	<VAST version='2.0'>
+//	  <Ad id='12345'>
+//	    <InLine>
 //	      <AdSystem>AdServer</AdSystem>
 //	      <AdTitle>Test Ad</AdTitle>
 //	      <Creatives>
-//	         <Creative>
-//	            <Linear>
-//	               <Duration>00:00:30</Duration>
-//	               <MediaFiles>
-//	                  <MediaFile delivery=’progressive’ type=’video/mp4’ width=’640’ height=’360’>
-//	                     <![CDATA[http://example.com/vast_tag.mp4]]>
-//	                  </MediaFile>
-//	               </MediaFiles>
-//	               <VideoClicks>
-//	                  <ClickThrough><![CDATA[http://example.com/click_here]]></ClickThrough>
-//	               </VideoClicks>
-//	            </Linear>
-//	         </Creative>
+//	        <Creative>
+//	          <Linear>
+//	            <Duration>00:00:30</Duration>
+//	            <MediaFiles>
+//	              <MediaFile delivery='progressive' type='video/mp4' width='640' height='360'>
+//	                <![CDATA[http://example.com/vast_tag.mp4]]>
+//	              </MediaFile>
+//	            </MediaFiles>
+//	            <VideoClicks>
+//	              <ClickThrough><![CDATA[http://example.com/click_here]]></ClickThrough>
+//	            </VideoClicks>
+//	          </Linear>
+//	        </Creative>
 //	      </Creatives>
-//	   </InLine>
-//	</Ad>
-//
-// </VAST>
+//	    </InLine>
+//	  </Ad>
+//	</VAST>
 type openNativeVASTTagInfo struct {
 	Version string `xml:"version,attr"`
 	Ad      struct {
@@ -116,6 +117,8 @@ type openNativeVASTTagInfo struct {
 	} `xml:"Ad"`
 }
 
+// parseOpenNativeVASTtag decodes a VAST 2.0 XML payload into [openNativeVASTTagInfo].
+// The charset-aware decoder is used to handle non-UTF-8 encoded documents.
 func parseOpenNativeVASTtag(data []byte) (*openNativeVASTTagInfo, error) {
 	var item openNativeVASTTagInfo
 	decoder := xml.NewDecoder(bytes.NewReader(data))

@@ -79,7 +79,10 @@ import (
 	"github.com/geniusrabbit/adcorelib/openlatency"
 	"github.com/geniusrabbit/adcorelib/openlatency/prometheuswrapper"
 
-	"github.com/geniusrabbit/adsource-openrtb/adresponse"
+	requestoptions "github.com/geniusrabbit/adsource-openrtb/request/options"
+	requestv2 "github.com/geniusrabbit/adsource-openrtb/request/v2"
+	requestv3 "github.com/geniusrabbit/adsource-openrtb/request/v3"
+	response "github.com/geniusrabbit/adsource-openrtb/response"
 )
 
 const (
@@ -105,6 +108,9 @@ type driver struct {
 
 	// Client of HTTP requests
 	netClient httpclient.Driver
+
+	// Request builder (v2 or v3 depending on source.Protocol)
+	builder requestoptions.RequestBuilder
 }
 
 func newDriver(_ context.Context, source *admodels.RTBSource, netClient httpclient.Driver, _ ...any) (*driver, error) {
@@ -114,11 +120,18 @@ func newDriver(_ context.Context, source *admodels.RTBSource, netClient httpclie
 	if netClient == nil {
 		return nil, ErrNilHTTPClient
 	}
+	var builder requestoptions.RequestBuilder
+	if source.Protocol == "openrtb3" {
+		builder = requestv3.New()
+	} else {
+		builder = requestv2.New()
+	}
 	source.MinimalWeight = max(source.MinimalWeight, defaultMinWeight)
 	return &driver{
 		source:    source,
 		headers:   source.Headers.DataOr(nil),
 		netClient: netClient,
+		builder:   builder,
 		latencyMetrics: prometheuswrapper.NewWrapperDefault("adsource_",
 			[]string{"id", "protocol", "driver"},
 			[]string{gocast.Str(source.ID), source.Protocol, "openrtb"},
@@ -318,14 +331,14 @@ func (d *driver) Metrics() *openlatency.MetricsInfo {
 // prepare request for RTB
 func (d *driver) request(request adtype.BidRequester) (req httpclient.Request, err error) {
 	var (
-		rtbRequest interface{ Validate() error }
+		rtbRequest requestoptions.RTBRequest
 		bufData    bytes.Buffer
 	)
 
-	if d.source.Protocol == "openrtb3" {
-		rtbRequest = requestToRTBv3(request, d.getRequestOptions()...)
-	} else {
-		rtbRequest = requestToRTBv2(request, d.getRequestOptions()...)
+	var buildErr error
+	rtbRequest, buildErr = d.builder.Build(request, d.getRequestOptions()...)
+	if buildErr != nil {
+		return nil, buildErr
 	}
 
 	if d.source.Options.Trace != 0 {
@@ -356,7 +369,7 @@ func (d *driver) request(request adtype.BidRequester) (req httpclient.Request, e
 	return req, nil
 }
 
-func (d *driver) unmarshal(request adtype.BidRequester, r io.Reader) (_ *adresponse.BidResponse, err error) {
+func (d *driver) unmarshal(request adtype.BidRequester, r io.Reader) (_ *response.BidResponse, err error) {
 	var bidResp openrtb.BidResponse
 
 	switch d.source.RequestType {
@@ -424,7 +437,7 @@ func (d *driver) unmarshal(request adtype.BidRequester, r io.Reader) (_ *adrespo
 	}
 
 	// Build response
-	bidResponse := &adresponse.BidResponse{
+	bidResponse := &response.BidResponse{
 		Src:         d,
 		Req:         request,
 		BidResponse: bidResp,
@@ -478,12 +491,12 @@ func (d *driver) processHTTPReponse(resp httpclient.Response, err error) {
 	}
 }
 
-func (d *driver) getRequestOptions() []BidRequestRTBOption {
-	return []BidRequestRTBOption{
-		WithRTBOpenNativeVersion("1.1"),
-		WithFormatFilter(d.source.TestFormat),
-		WithMaxTimeDuration(time.Duration(d.source.Timeout) * time.Millisecond),
-		WithAuctionType(d.source.AuctionType),
-		WithBidFloor(d.source.MinBid.Float64()),
+func (d *driver) getRequestOptions() []requestoptions.BidRequestRTBOption {
+	return []requestoptions.BidRequestRTBOption{
+		requestoptions.WithRTBOpenNativeVersion("1.1"),
+		requestoptions.WithFormatFilter(d.source.TestFormat),
+		requestoptions.WithMaxTimeDuration(time.Duration(d.source.Timeout) * time.Millisecond),
+		requestoptions.WithAuctionType(d.source.AuctionType),
+		requestoptions.WithBidFloor(d.source.MinBid.Float64()),
 	}
 }

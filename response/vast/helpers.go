@@ -1,4 +1,9 @@
-package adresponse
+//
+// @project GeniusRabbit corelib 2017 - 2019, 2025
+// @author Dmitry Ponomarev <demdxx@gmail.com> 2017 - 2019, 2025
+//
+
+package vast
 
 import (
 	"encoding/xml"
@@ -7,16 +12,26 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ErrInvalidVAST is returned when the VAST document structure is not valid.
+var ErrInvalidVAST = errors.New("invalid VAST response")
+
+// ErrUnsupportedVASTConfiguration is the base sentinel for VAST configuration
+// validation errors. All configuration-specific errors wrap this sentinel.
+var ErrUnsupportedVASTConfiguration = errors.New("unsupported VAST configuration")
+
+// Detailed VAST configuration validation errors, all wrapping
+// [ErrUnsupportedVASTConfiguration].
 var (
-	errMultipleAdsNotSupported       = errors.Wrap(ErrUnsupportedVASTConfiguration, "multiple ads are not supported")
+	errMultipleAdsNotSupported      = errors.Wrap(ErrUnsupportedVASTConfiguration, "multiple ads are not supported")
 	errMultipleCreativesNotSupported = errors.Wrap(ErrUnsupportedVASTConfiguration, "multiple creatives are not supported")
-	errConditionalAdNotSupported     = errors.Wrap(ErrUnsupportedVASTConfiguration, "conditional ad is not supported")
-	errEmptyVASTAdTagURI             = errors.Wrap(ErrUnsupportedVASTConfiguration, "empty VASTAdTagURI in wrapper")
-	errInvalidInlineAdConfig         = errors.Wrap(ErrUnsupportedVASTConfiguration, "invalid inline ad configuration")
-	errInvalidWrapperAdConfig        = errors.Wrap(ErrUnsupportedVASTConfiguration, "invalid wrapper ad configuration")
-	errUnsupportedAdConfig           = errors.Wrap(ErrUnsupportedVASTConfiguration, "unsupported ad configuration")
+	errConditionalAdNotSupported    = errors.Wrap(ErrUnsupportedVASTConfiguration, "conditional ad is not supported")
+	errEmptyVASTAdTagURI            = errors.Wrap(ErrUnsupportedVASTConfiguration, "empty VASTAdTagURI in wrapper")
+	errInvalidInlineAdConfig        = errors.Wrap(ErrUnsupportedVASTConfiguration, "invalid inline ad configuration")
+	errInvalidWrapperAdConfig       = errors.Wrap(ErrUnsupportedVASTConfiguration, "invalid wrapper ad configuration")
+	errUnsupportedAdConfig          = errors.Wrap(ErrUnsupportedVASTConfiguration, "unsupported ad configuration")
 )
 
+// unmarshalVAST decodes raw XML bytes into a [vast.VAST] document.
 func unmarshalVAST(data []byte) (*vast.VAST, error) {
 	var v vast.VAST
 	err := xml.Unmarshal(data, &v)
@@ -26,6 +41,8 @@ func unmarshalVAST(data []byte) (*vast.VAST, error) {
 	return &v, nil
 }
 
+// validateVAST performs structural validation of a parsed VAST document.
+// It enforces the constraint that exactly one, non-conditional ad is present.
 func validateVAST(v *vast.VAST) error {
 	if v == nil || len(v.Ads) == 0 {
 		return ErrInvalidVAST
@@ -70,6 +87,8 @@ func validateVAST(v *vast.VAST) error {
 	return nil
 }
 
+// validateVASTCreativeWrapper validates a VAST Wrapper creative element,
+// ensuring it contains a Linear element with valid click-through URLs.
 func validateVASTCreativeWrapper(v *vast.CreativeWrapper) error {
 	if v.Linear == nil {
 		return errInvalidWrapperAdConfig
@@ -87,6 +106,8 @@ func validateVASTCreativeWrapper(v *vast.CreativeWrapper) error {
 	return nil
 }
 
+// validateVASTCreative validates a VAST InLine creative element,
+// ensuring it contains a Linear element with valid click-through URLs.
 func validateVASTCreative(creative *vast.Creative) error {
 	if creative.Linear == nil {
 		return errInvalidInlineAdConfig

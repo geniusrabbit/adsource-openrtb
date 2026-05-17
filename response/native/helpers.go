@@ -1,4 +1,9 @@
-package adresponse
+//
+// @project GeniusRabbit corelib 2017 - 2019, 2025
+// @author Dmitry Ponomarev <demdxx@gmail.com> 2017 - 2019, 2025
+//
+
+package native
 
 import (
 	"bytes"
@@ -13,6 +18,10 @@ import (
 	"github.com/geniusrabbit/adcorelib/models"
 )
 
+// decodeNativeMarkup decodes a raw JSON native ad markup into a [response.Response].
+// It handles two common wire formats:
+//  1. A top-level wrapper object: {"native": {...}}
+//  2. The native response object directly: {"link": ..., "assets": [...]}
 func decodeNativeMarkup(data []byte) (*response.Response, error) {
 	var (
 		native struct {
@@ -34,6 +43,8 @@ func decodeNativeMarkup(data []byte) (*response.Response, error) {
 	return &native.Native, nil
 }
 
+// openrtbNativeLabelNameByType maps an OpenRTB Native data asset type ID to its
+// canonical field name used in the ad content map.
 func openrtbNativeLabelNameByType(dataTypeID int) string {
 	switch request.DataTypeID(dataTypeID) {
 	case request.DataTypeSponsored:
@@ -58,24 +69,23 @@ func openrtbNativeLabelNameByType(dataTypeID int) string {
 	// 	return models.FormatFieldDescAdditional
 	case request.DataTypeDisplayURL:
 		return models.FormatFieldURL
-		// case request.DataTypeCTADesc:
-		// 	return models.FormatFieldCTADesc
+	// case request.DataTypeCTADesc:
+	// 	return models.FormatFieldCTADesc
 	}
 	return ""
 }
 
-// extractNativeV2Data extracts native ad data from OpenRTB Native v1.x/v2.x request and response.
-// It maps asset IDs from the response to the request, using the asset type to determine the field name.
+// extractNativeV2Data extracts native ad data from an OpenRTB Native v1.x/v2.x
+// request and response pair. Asset IDs in the response are matched against the
+// request to determine the correct field name for each data asset.
 func extractNativeV2Data(req *request.Request, resp *response.Response) map[string]any {
 	data := map[string]any{}
-	data[adtype.ContentItemLink] = resp.Link.URL // Add the main link
+	data[adtype.ContentItemLink] = resp.Link.URL
 
 	for _, asset := range resp.Assets {
 		if asset.Title != nil {
-			// Title asset
 			data[types.FormatFieldTitle] = asset.Title.Text
 		} else if asset.Data != nil {
-			// Data asset: find matching asset in request to determine field name
 			for _, ass := range req.Assets {
 				if ass.ID == asset.ID && ass.Data != nil {
 					name := openrtbNativeLabelNameByType(int(ass.Data.TypeID))
@@ -93,18 +103,17 @@ func extractNativeV2Data(req *request.Request, resp *response.Response) map[stri
 	return data
 }
 
-// extractNativeV3Data extracts native ad data from OpenRTB Native v3.x request and v1.x/v2.x response.
-// It maps asset IDs from the response to the request, using the asset type to determine the field name.
+// extractNativeV3Data extracts native ad data from an OpenRTB Native v3.x request
+// paired with a v1.x/v2.x response. Asset IDs are matched across protocol versions
+// to determine the correct field name for each data asset.
 func extractNativeV3Data(req *requestV3.Request, resp *response.Response) map[string]any {
 	data := map[string]any{}
-	data[adtype.ContentItemLink] = resp.Link.URL // Add the main link
+	data[adtype.ContentItemLink] = resp.Link.URL
 
 	for _, asset := range resp.Assets {
 		if asset.Title != nil {
-			// Title asset
 			data[types.FormatFieldTitle] = asset.Title.Text
 		} else if asset.Data != nil {
-			// Data asset: find matching asset in request to determine field name
 			for _, ass := range req.Assets {
 				if ass.ID == asset.ID && ass.Data != nil {
 					name := openrtbNativeLabelNameByType(int(ass.Data.TypeID))
@@ -122,6 +131,10 @@ func extractNativeV3Data(req *requestV3.Request, resp *response.Response) map[st
 	return data
 }
 
+// extractNativeDataFromImpression selects the appropriate extract function based on
+// whether the impression carries an OpenRTB Native v2.x or v3.x request, and returns
+// the resulting field map. Returns nil if no native request is attached.
+//
 //go:inline
 func extractNativeDataFromImpression(imp *adtype.Impression, native *response.Response) map[string]any {
 	if nativeRequestV2 := imp.RTBNativeRequest(); nativeRequestV2 != nil {

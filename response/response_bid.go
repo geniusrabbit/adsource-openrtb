@@ -1,20 +1,18 @@
 //
-// @project GeniusRabbit corelib 2016 – 2019, 2024 - 2025
-// @author Dmitry Ponomarev <demdxx@gmail.com> 2016 – 2019, 2024 - 2025
+// @project GeniusRabbit corelib 2016 - 2019, 2024 - 2025
+// @author Dmitry Ponomarev <demdxx@gmail.com> 2016 - 2019, 2024 - 2025
 //
-// Package adresponse handles the processing and manipulation of OpenRTB bid responses.
+// Package response handles the processing and manipulation of OpenRTB bid responses.
 // This file contains the BidResponse implementation which handles the preparation
 // of bid responses, extraction of optimal bids, and conversion of OpenRTB bid responses
-// into standardized ad response items.
+// into standardised ad response items.
 //
 // The BidResponse struct manages the lifecycle of OpenRTB bid responses including:
-// - Response preparation and URL/markup handling
-// - Bid validation and optimization
-// - Format detection and response item creation
-// - Price calculation and adjustment
-//
-
-package adresponse
+//   - Response preparation and URL/markup handling
+//   - Bid validation and optimisation
+//   - Format detection and response item creation
+//   - Price calculation and adjustment
+package response
 
 import (
 	"context"
@@ -30,6 +28,11 @@ import (
 	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/context/ctxlogger"
+
+	"github.com/geniusrabbit/adsource-openrtb/response/banner"
+	"github.com/geniusrabbit/adsource-openrtb/response/direct"
+	"github.com/geniusrabbit/adsource-openrtb/response/native"
+	vastp "github.com/geniusrabbit/adsource-openrtb/response/vast"
 )
 
 // BidResponse represents an OpenRTB bid response with additional processing capabilities.
@@ -59,37 +62,30 @@ func (r *BidResponse) AuctionID() string {
 }
 
 // AuctionType returns the auction type from the original bid request.
-// This determines whether the auction is first-price, second-price, etc.
 func (r *BidResponse) AuctionType() types.AuctionType {
 	return r.Req.AuctionType()
 }
 
-// Source returns the source of the bid response (e.g., which demand partner or exchange).
+// Source returns the source of the bid response.
 func (r *BidResponse) Source() adtype.Source {
 	return r.Src
 }
 
 // Prepare processes the bid response to make it ready for use in ad serving.
-// This includes:
-// - Processing bid markup and URLs
-// - Replacing macros in creative content
-// - Extracting optimal bids
-// - Creating standardized ad objects
+// This includes processing bid markup and URLs, replacing macros in creative content,
+// extracting optimal bids, and creating standardised ad objects.
 func (r *BidResponse) Prepare() {
 	r.bidRespBidCount = 0
 
-	// Prepare URLs and markup for response
 	for i, seat := range r.BidResponse.SeatBid {
 		for i, bid := range seat.Bid {
 			imp := xtypes.Slice[*adtype.Impression](r.Req.Impressions()).FirstOr(nil,
 				func(imp **adtype.Impression) bool { return strings.HasPrefix(bid.ImpID, (*imp).ID) })
 
-			// Set default dimensions from impression if not present in bid
 			if imp != nil && (bid.W == 0 && bid.H == 0) {
 				bid.W, bid.H = imp.Width, imp.Height
 			}
 
-			// Replace auction-related macros in creative content and tracking URLs
 			replacer := r.newBidReplacer(&bid)
 			bid.AdMarkup = replacer.Replace(bid.AdMarkup)
 			bid.NURL = prepareURL(bid.NURL, replacer)
@@ -100,9 +96,8 @@ func (r *BidResponse) Prepare() {
 
 		r.BidResponse.SeatBid[i] = seat
 		r.bidRespBidCount += len(seat.Bid)
-	} // end for
+	}
 
-	// Create response ad items from the optimal bids for each impression
 	for _, bid := range r.OptimalBids() {
 		imp := xtypes.Slice[*adtype.Impression](r.Req.Impressions()).FirstOr(nil,
 			func(imp **adtype.Impression) bool { return strings.HasPrefix(bid.ImpID, (*imp).ID) })
@@ -114,9 +109,9 @@ func (r *BidResponse) Prepare() {
 	}
 }
 
-// prepareBidItem creates a standardized ResponseBidItem from an OpenRTB bid and impression.
-// It handles different creative formats (direct, native, banner) and sets up pricing information.
-// Returns nil if no appropriate format can be determined.
+// prepareBidItem creates a standardised ResponseBidItem from an OpenRTB bid and impression.
+// It delegates to the appropriate format-specific constructor and returns nil when the
+// format cannot be determined or the constructor returns an error.
 func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) adtype.ResponseItemCommon {
 	var (
 		format  *types.Format
@@ -124,11 +119,9 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 		err     error
 	)
 
-	// Determine the appropriate format based on impression type
 	if imp.IsDirect() {
 		format = imp.FormatByType(types.FormatDirectType)
 	} else {
-		// Match the bid impression ID with the correct format
 		for _, formatObj := range imp.Formats() {
 			if bid.ImpID != imp.IDByFormat(formatObj) {
 				continue
@@ -138,16 +131,13 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 		}
 	}
 
-	// No matching format found, can't create bid item
 	if format == nil {
 		return nil
 	}
 
-	// Create appropriate bid item based on format type
 	switch {
 	case format.IsDirect():
-		if bidItem, err = newResponseDirectBidItem(r.Req, r.Src, bid, imp, format); err != nil {
-			// Log direct bid item creation failures
+		if bidItem, err = direct.New(r.Req, r.Src, bid, imp, format); err != nil {
 			ctxlogger.Get(r.Context()).Debug(
 				"Failed to create direct bid item",
 				zap.String("markup", bid.AdMarkup),
@@ -155,8 +145,7 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 			)
 		}
 	case format.IsNative():
-		if bidItem, err = newResponseNativeBidItem(r.Req, r.Src, bid, imp, format); err != nil {
-			// Log native markup decoding failures
+		if bidItem, err = native.New(r.Req, r.Src, bid, imp, format); err != nil {
 			ctxlogger.Get(r.Context()).Debug(
 				"Failed to decode native markup",
 				zap.String("markup", bid.AdMarkup),
@@ -164,8 +153,7 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 			)
 		}
 	case format.IsBanner() || format.IsProxy():
-		if bidItem, err = newResponseBannerBidItem(r.Req, r.Src, bid, imp, format); err != nil {
-			// Log banner markup decoding failures
+		if bidItem, err = banner.New(r.Req, r.Src, bid, imp, format); err != nil {
 			ctxlogger.Get(r.Context()).Debug(
 				"Failed to decode banner markup",
 				zap.String("markup", bid.AdMarkup),
@@ -173,8 +161,7 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 			)
 		}
 	case format.IsVideo():
-		if bidItem, err = newResponseVASTBidItem(r.Req, r.Src, bid, imp, format); err != nil {
-			// Log video markup decoding failures
+		if bidItem, err = vastp.New(r.Req, r.Src, bid, imp, format); err != nil {
 			ctxlogger.Get(r.Context()).Debug(
 				"Failed to decode video markup",
 				zap.String("markup", bid.AdMarkup),
@@ -243,7 +230,6 @@ func (r *BidResponse) Validate() error {
 	}
 	err := r.BidResponse.Validate()
 	if err == nil {
-		// Check for invalid group flag (OpenRTB spec requires group=0 or unspecified)
 		for _, seat := range r.BidResponse.SeatBid {
 			if seat.Group == 1 {
 				return adtype.ErrResponseInvalidGroup
@@ -254,22 +240,18 @@ func (r *BidResponse) Validate() error {
 }
 
 // Error returns the validation error, if any.
-// This is a convenience method that calls Validate().
 func (r *BidResponse) Error() error {
 	return r.Validate()
 }
 
 // OptimalBids returns the most expensive bid for each impression.
-// Results are cached after first call for performance.
+// Results are cached after the first call.
 func (r *BidResponse) OptimalBids() []*openrtb.Bid {
 	if len(r.optimalBids) > 0 {
 		return r.optimalBids
 	}
 
-	// Find the highest-priced bid for each impression ID
 	totalBidsCount := 0
-
-	// Sort bids by impression ID and price to ensure we get the most expensive bid for each impression
 	for _, seat := range r.BidResponse.SeatBid {
 		totalBidsCount += len(seat.Bid)
 	}
@@ -286,9 +268,7 @@ func (r *BidResponse) OptimalBids() []*openrtb.Bid {
 			(allBids[i].ImpID == allBids[j].ImpID && allBids[i].Price > allBids[j].Price)
 	})
 
-	// Map to store the highest bid for each impression ID
 	optimalBids := make([]*openrtb.Bid, 0, totalBidsCount)
-
 	for _, imp := range r.Req.Impressions() {
 		added := 0
 		bidCount := max(imp.Count, 1)
@@ -308,8 +288,6 @@ func (r *BidResponse) OptimalBids() []*openrtb.Bid {
 }
 
 // Context gets or sets the context for this response.
-// If a context is provided, it will be stored. If not, the current context
-// or request context is returned.
 func (r *BidResponse) Context(ctx ...context.Context) context.Context {
 	if len(ctx) > 0 {
 		r.context = ctx[0]
@@ -321,7 +299,6 @@ func (r *BidResponse) Context(ctx ...context.Context) context.Context {
 }
 
 // Get retrieves a value from the response context by key.
-// Returns nil if context is nil or key is not found.
 func (r *BidResponse) Get(key string) any {
 	if r.context != nil {
 		return r.context.Value(key)
@@ -329,8 +306,7 @@ func (r *BidResponse) Get(key string) any {
 	return nil
 }
 
-// newBidReplacer creates a string replacer for macro substitution in creative content and URLs.
-// It handles standard OpenRTB macros for auction IDs, prices, etc.
+// newBidReplacer creates a [strings.Replacer] for macro substitution in creative content and URLs.
 func (r *BidResponse) newBidReplacer(bid *openrtb.Bid) *strings.Replacer {
 	return strings.NewReplacer(
 		"${AUCTION_AD_ID}", bid.AdID,
@@ -356,6 +332,6 @@ func (r *BidResponse) Release() {
 }
 
 var (
-	// Verify BidResponse implements the adtype.Responser interface
+	// Verify BidResponse implements the adtype.Response interface.
 	_ adtype.Response = &BidResponse{}
 )
