@@ -11,7 +11,6 @@ package native
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/bsm/openrtb"
 	natresp "github.com/bsm/openrtb/native/response"
@@ -94,32 +93,36 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 	}
 
 	bidItem.PriceScope.MaxBidImpPrice = price.CalculatePurchasePrice(bidItem, adtype.ActionImpression)
-	return bidItem, nil
-}
 
-// validateRequiredAssets checks that every required image/video asset declared in
-// the format config is present (by matching asset ID) in the native response.
-// Returns [ErrMissingRequiredAsset] on the first missing required asset.
-func validateRequiredAssets(format *types.Format, native *natresp.Response) error {
-	if format == nil || format.Config == nil {
-		return nil
-	}
-	for _, configAsset := range format.Config.Assets {
-		if !configAsset.IsRequired() {
-			continue
-		}
-		found := false
-		for _, asset := range native.Assets {
-			if asset.ID == configAsset.ID && (asset.Image != nil || asset.Video != nil) {
-				found = true
+	// Extract media assets and cache them in the bid item for future access.
+	if format.Config != nil {
+		for _, configAsset := range format.Config.Assets {
+			for _, asset := range bidItem.Native.Assets {
+				// Skip assets that don't match the config ID or carry no media.
+				if asset.ID != configAsset.ID || (asset.Image == nil && asset.Video == nil) {
+					continue
+				}
+				newAsset := &admodels.AdFileAsset{
+					ID:   uint64(asset.ID),
+					Name: configAsset.GetName(),
+				}
+				switch {
+				case asset.Image != nil:
+					newAsset.URL = asset.Image.URL
+					newAsset.Type = types.AdFileAssetImageType
+					newAsset.Width = asset.Image.Width
+					newAsset.Height = asset.Image.Height
+				case asset.Video != nil:
+					newAsset.URL = asset.Video.VASTTag
+					newAsset.Type = types.AdFileAssetVideoType
+				}
+				bidItem.assets = append(bidItem.assets, newAsset)
 				break
 			}
 		}
-		if !found {
-			return fmt.Errorf("%w: asset id=%d name=%q", ErrMissingRequiredAsset, configAsset.ID, configAsset.GetName())
-		}
 	}
-	return nil
+
+	return bidItem, nil
 }
 
 // ID returns the unique identifier of the response item.
@@ -238,34 +241,6 @@ func (it *ResponseBidItem) MainAsset() *admodels.AdFileAsset {
 // On the first call the list is built lazily by matching format config asset IDs
 // against the image/video assets present in the native response.
 func (it *ResponseBidItem) Assets() admodels.AdFileAssets {
-	if it.assets != nil || it.Format().Config == nil {
-		return it.assets
-	}
-	config := it.Format().Config
-	for _, configAsset := range config.Assets {
-		for _, asset := range it.Native.Assets {
-			// Skip assets that don't match the config ID or carry no media.
-			if asset.ID != configAsset.ID || (asset.Image == nil && asset.Video == nil) {
-				continue
-			}
-			newAsset := &admodels.AdFileAsset{
-				ID:   uint64(asset.ID),
-				Name: configAsset.GetName(),
-			}
-			switch {
-			case asset.Image != nil:
-				newAsset.URL = asset.Image.URL
-				newAsset.Type = types.AdFileAssetImageType
-				newAsset.Width = asset.Image.Width
-				newAsset.Height = asset.Image.Height
-			case asset.Video != nil:
-				newAsset.URL = asset.Video.VASTTag
-				newAsset.Type = types.AdFileAssetVideoType
-			}
-			it.assets = append(it.assets, newAsset)
-			break
-		}
-	}
 	return it.assets
 }
 

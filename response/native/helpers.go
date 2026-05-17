@@ -8,9 +8,11 @@ package native
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/bsm/openrtb/native/request"
 	"github.com/bsm/openrtb/native/response"
+	natresp "github.com/bsm/openrtb/native/response"
 	requestV3 "github.com/bsm/openrtb/v3/native/request"
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
@@ -69,8 +71,8 @@ func openrtbNativeLabelNameByType(dataTypeID int) string {
 	// 	return models.FormatFieldDescAdditional
 	case request.DataTypeDisplayURL:
 		return models.FormatFieldURL
-	// case request.DataTypeCTADesc:
-	// 	return models.FormatFieldCTADesc
+		// case request.DataTypeCTADesc:
+		// 	return models.FormatFieldCTADesc
 	}
 	return ""
 }
@@ -141,6 +143,31 @@ func extractNativeDataFromImpression(imp *adtype.Impression, native *response.Re
 		return extractNativeV2Data(nativeRequestV2, native)
 	} else if nativeRequestV3 := imp.RTBNativeRequestV3(); nativeRequestV3 != nil {
 		return extractNativeV3Data(nativeRequestV3, native)
+	}
+	return nil
+}
+
+// validateRequiredAssets checks that every required image/video asset declared in
+// the format config is present (by matching asset ID) in the native response.
+// Returns [ErrMissingRequiredAsset] on the first missing required asset.
+func validateRequiredAssets(format *types.Format, native *natresp.Response) error {
+	if format == nil || format.Config == nil {
+		return nil
+	}
+	for _, configAsset := range format.Config.Assets {
+		if !configAsset.IsRequired() {
+			continue
+		}
+		found := false
+		for _, asset := range native.Assets {
+			if asset.ID == configAsset.ID && (asset.Image != nil || asset.Video != nil) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("%w: asset id=%d name=%q", ErrMissingRequiredAsset, configAsset.ID, configAsset.GetName())
+		}
 	}
 	return nil
 }
