@@ -108,6 +108,12 @@ type driver struct {
 }
 
 func newDriver(_ context.Context, source *admodels.RTBSource, netClient httpclient.Driver, _ ...any) (*driver, error) {
+	if source == nil {
+		return nil, ErrNilSource
+	}
+	if netClient == nil {
+		return nil, ErrNilHTTPClient
+	}
 	source.MinimalWeight = max(source.MinimalWeight, defaultMinWeight)
 	return &driver{
 		source:    source,
@@ -147,6 +153,9 @@ func (d *driver) AccountID() uint64 {
 
 // Test request before processing
 func (d *driver) Test(request adtype.BidRequester) bool {
+	if request == nil {
+		return false
+	}
 	if d.source.RPS > 0 {
 		if d.source.Options.ErrorsIgnore == 0 && !d.errorCounter.Next() {
 			d.latencyMetrics.IncSkip()
@@ -223,7 +232,7 @@ func (d *driver) Bid(request adtype.BidRequester) (response adtype.Response) {
 	// Not success status code
 	if resp.StatusCode() != http.StatusOK {
 		d.processHTTPReponse(resp, nil)
-		return adtype.NewErrorResponse(request, ErrInvalidResponseStatus)
+		return adtype.NewErrorResponse(request, &HTTPStatusError{Code: resp.StatusCode()})
 	}
 
 	// Decode response body
@@ -366,9 +375,9 @@ func (d *driver) unmarshal(request adtype.BidRequester, r io.Reader) (_ *adrespo
 			err = json.NewDecoder(r).Decode(&bidResp)
 		}
 	case RequestTypeXML, RequestTypeProtobuff:
-		err = fmt.Errorf("request body type not supported: %s", d.source.RequestType.Name())
+		err = &UnsupportedTypeError{TypeName: d.source.RequestType.Name()}
 	default:
-		err = fmt.Errorf("undefined request type: %s", d.source.RequestType.Name())
+		err = &UndefinedTypeError{TypeName: d.source.RequestType.Name()}
 	}
 
 	if err != nil {
