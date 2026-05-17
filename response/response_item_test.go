@@ -19,6 +19,7 @@ import (
 	"github.com/geniusrabbit/adcorelib/price"
 
 	"github.com/geniusrabbit/adsource-openrtb/response/banner"
+	"github.com/geniusrabbit/adsource-openrtb/response/common"
 )
 
 func TestItemPricing(t *testing.T) {
@@ -55,17 +56,18 @@ func TestItemPricing(t *testing.T) {
 
 func newRTBResponse(_ *admodels.Account, imp *adtype.Impression) *banner.ResponseBidItem {
 	return &banner.ResponseBidItem{
-		ItemID:   "1",
-		Src:      &adtype.SourceEmpty{PriceCorrectionReduce: 0},
-		Req:      &bidrequest.BidRequest{IDVal: "xxx", Imps: []*adtype.Impression{imp}},
-		Imp:      imp,
-		Bid:      &openrtb.Bid{Price: 60},
-		SecondAd: adtype.SecondAd{},
-		PriceScope: price.PriceScopeImpression{
-			MaxBidImpPrice: billing.MoneyFloat(10.),
-			BidImpPrice:    0,
-			ImpPrice:       billing.MoneyFloat(10.),
-			ECPM:           billing.MoneyFloat(10.),
+		BaseBidItem: common.BaseBidItem{
+			ItemID: "1",
+			Src:    &adtype.SourceEmpty{PriceCorrectionReduce: 0},
+			Req:    &bidrequest.BidRequest{IDVal: "xxx", Imps: []*adtype.Impression{imp}},
+			Imp:    imp,
+			Bid:    &openrtb.Bid{Price: 60},
+			PriceScope: price.PriceScopeImpression{
+				MaxBidImpPrice: billing.MoneyFloat(10.),
+				BidImpPrice:    0,
+				ImpPrice:       billing.MoneyFloat(10.),
+				ECPM:           billing.MoneyFloat(10.),
+			},
 		},
 	}
 }

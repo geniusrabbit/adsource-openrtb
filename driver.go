@@ -57,6 +57,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -169,6 +170,7 @@ func (d *driver) Test(request adtype.BidRequester) bool {
 	if request == nil {
 		return false
 	}
+
 	if d.source.RPS > 0 {
 		if d.source.Options.ErrorsIgnore == 0 && !d.errorCounter.Next() {
 			d.latencyMetrics.IncSkip()
@@ -185,7 +187,7 @@ func (d *driver) Test(request adtype.BidRequester) bool {
 		}
 	}
 
-	if !d.source.Test(request) {
+	if !slices.ContainsFunc(request.TargetPointers(), d.source.Test) {
 		d.latencyMetrics.IncSkip()
 		return false
 	}

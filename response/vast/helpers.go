@@ -7,7 +7,9 @@ package vast
 
 import (
 	"encoding/xml"
+	"strings"
 
+	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/haxqer/vast"
 	"github.com/pkg/errors"
 )
@@ -22,13 +24,13 @@ var ErrUnsupportedVASTConfiguration = errors.New("unsupported VAST configuration
 // Detailed VAST configuration validation errors, all wrapping
 // [ErrUnsupportedVASTConfiguration].
 var (
-	errMultipleAdsNotSupported      = errors.Wrap(ErrUnsupportedVASTConfiguration, "multiple ads are not supported")
+	errMultipleAdsNotSupported       = errors.Wrap(ErrUnsupportedVASTConfiguration, "multiple ads are not supported")
 	errMultipleCreativesNotSupported = errors.Wrap(ErrUnsupportedVASTConfiguration, "multiple creatives are not supported")
-	errConditionalAdNotSupported    = errors.Wrap(ErrUnsupportedVASTConfiguration, "conditional ad is not supported")
-	errEmptyVASTAdTagURI            = errors.Wrap(ErrUnsupportedVASTConfiguration, "empty VASTAdTagURI in wrapper")
-	errInvalidInlineAdConfig        = errors.Wrap(ErrUnsupportedVASTConfiguration, "invalid inline ad configuration")
-	errInvalidWrapperAdConfig       = errors.Wrap(ErrUnsupportedVASTConfiguration, "invalid wrapper ad configuration")
-	errUnsupportedAdConfig          = errors.Wrap(ErrUnsupportedVASTConfiguration, "unsupported ad configuration")
+	errConditionalAdNotSupported     = errors.Wrap(ErrUnsupportedVASTConfiguration, "conditional ad is not supported")
+	errEmptyVASTAdTagURI             = errors.Wrap(ErrUnsupportedVASTConfiguration, "empty VASTAdTagURI in wrapper")
+	errInvalidInlineAdConfig         = errors.Wrap(ErrUnsupportedVASTConfiguration, "invalid inline ad configuration")
+	errInvalidWrapperAdConfig        = errors.Wrap(ErrUnsupportedVASTConfiguration, "invalid wrapper ad configuration")
+	errUnsupportedAdConfig           = errors.Wrap(ErrUnsupportedVASTConfiguration, "unsupported ad configuration")
 )
 
 // unmarshalVAST decodes raw XML bytes into a [vast.VAST] document.
@@ -123,4 +125,20 @@ func validateVASTCreative(creative *vast.Creative) error {
 		return errUnsupportedAdConfig
 	}
 	return nil
+}
+
+func assetTypeFromContentType(contentType string, defType types.AdFileAssetType) types.AdFileAssetType {
+	switch {
+	case strings.HasPrefix(contentType, "video/") ||
+		strings.HasPrefix(contentType, "application/vnd.apple.mpegurl") ||
+		strings.HasPrefix(contentType, "application/x-mpegURL") ||
+		strings.HasPrefix(contentType, "application/dash+xml") ||
+		strings.HasPrefix(contentType, "application/vnd.ms-sstr+xml") ||
+		contentType == "video":
+		return types.AdFileAssetVideoType
+	case strings.HasPrefix(contentType, "image/") || contentType == "image":
+		return types.AdFileAssetImageType
+	default:
+		return defType
+	}
 }
