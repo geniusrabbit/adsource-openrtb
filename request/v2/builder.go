@@ -5,7 +5,6 @@ import (
 
 	"github.com/bsm/openrtb"
 	openrtbnreq "github.com/bsm/openrtb/native/request"
-	"github.com/demdxx/gocast/v2"
 	uopenrtb "github.com/geniusrabbit/udetect/openrtb"
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
@@ -22,15 +21,15 @@ func New() *Builder { return &Builder{} }
 
 // Build constructs an OpenRTB v2 bid request and returns it as requestoptions.RTBRequest.
 func (b *Builder) Build(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (requestoptions.RTBRequest, error) {
-	return requestToRTBv2(req, opts...), nil
+	return requestToRTBv2(req, opts...)
 }
 
-func requestToRTBv2(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) *openrtb.BidRequest {
+func requestToRTBv2(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (*openrtb.BidRequest, error) {
 	var opt requestoptions.BidRequestRTBOptions
 	for _, fn := range opts {
 		fn(&opt)
 	}
-	return &openrtb.BidRequest{
+	bidReq := &openrtb.BidRequest{
 		ID:          req.ID(),
 		Imp:         openrtbV2Impressions(req, &opt),
 		Site:        uopenrtb.SiteFrom(req.SiteInfo()),
@@ -47,6 +46,10 @@ func requestToRTBv2(req adtype.BidRequester, opts ...requestoptions.BidRequestRT
 		Regs:        nil,
 		Ext:         nil,
 	}
+	if err := bidReq.Validate(); err != nil {
+		return nil, err
+	}
+	return bidReq, nil
 }
 
 func openrtbV2Impressions(req adtype.BidRequester, opts *requestoptions.BidRequestRTBOptions) (list []openrtb.Impression) {
@@ -78,6 +81,24 @@ func openrtbV2ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression
 		if !format.IsStretch() {
 			wm, wh = 0, 0
 		}
+		var btype []int
+		if !imp.IsInterstitial() {
+			if format.IsProxy() {
+				// Blocked creative types for proxy formats (1 = XHTML Text Ad, 2 = XHTML Banner Ad)
+				btype = []int{1, 2}
+			} else {
+				// Blocked creative types for regular banner formats (3 = JavaScript Ad, 4 = Iframe Ad)
+				btype = []int{3, 4}
+			}
+		} else {
+			w, h, wm, wh = max(w, wm), max(h, wh), 0, 0
+			//  BANNER = 1;
+			//  POPUNDER = 4;
+			//  INTERSTITIAL = 5;
+			//  PREROLL = 6;
+			//  TAB = 7;
+			ext = openrtb.Extension(`{"type":"interstitial","format":5}`)
+		}
 		banner = &openrtb.Banner{
 			ID:       "",
 			W:        max(w, 5),
@@ -87,7 +108,7 @@ func openrtbV2ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression
 			WMin:     0,
 			HMin:     0,
 			Pos:      imp.Pos,
-			BType:    gocast.IfThen(format.IsProxy(), []int{1, 2}, []int{3, 4}), // Blocked creative types
+			BType:    btype,
 			BAttr:    nil,
 			Mimes:    nil,
 			TopFrame: 0,
@@ -104,7 +125,7 @@ func openrtbV2ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression
 			Ext:     nil,
 		}
 	case format.IsDirect():
-		if imp.Interstitial == 0 {
+		if !imp.IsInterstitial() {
 			ext = openrtb.Extension(`{"type":"pop"}`)
 		}
 	case format.IsVideo():

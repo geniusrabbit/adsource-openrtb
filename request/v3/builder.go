@@ -5,7 +5,6 @@ import (
 
 	openrtbnreq "github.com/bsm/openrtb/native/request"
 	"github.com/bsm/openrtb/v3"
-	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/udetect"
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
@@ -22,15 +21,15 @@ func New() *Builder { return &Builder{} }
 
 // Build constructs an OpenRTB v3 bid request and returns it as requestoptions.RTBRequest.
 func (b *Builder) Build(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (requestoptions.RTBRequest, error) {
-	return requestToRTBv3(req, opts...), nil
+	return requestToRTBv3(req, opts...)
 }
 
-func requestToRTBv3(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) *openrtb.BidRequest {
+func requestToRTBv3(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (*openrtb.BidRequest, error) {
 	var opt requestoptions.BidRequestRTBOptions
 	for _, fn := range opts {
 		fn(&opt)
 	}
-	return &openrtb.BidRequest{
+	bidReq := &openrtb.BidRequest{
 		ID:                req.ID(),
 		Impressions:       openrtbV3Impressions(req, &opt),
 		Site:              uopenrtbOpenrtbV3SiteFrom(req.SiteInfo()),
@@ -47,6 +46,10 @@ func requestToRTBv3(req adtype.BidRequester, opts ...requestoptions.BidRequestRT
 		Regulations:       nil,
 		Ext:               nil,
 	}
+	if err := bidReq.Validate(); err != nil {
+		return nil, err
+	}
+	return bidReq, nil
 }
 
 func openrtbV3Impressions(req adtype.BidRequester, opts *requestoptions.BidRequestRTBOptions) (list []openrtb.Impression) {
@@ -78,19 +81,34 @@ func openrtbV3ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression
 		if !format.IsStretch() {
 			wm, wh = 0, 0
 		}
+		var btype []openrtb.BannerType
+		if !imp.IsInterstitial() {
+			if format.IsProxy() {
+				// Blocked creative types for proxy formats (1 = XHTML Text Ad, 2 = XHTML Banner Ad)
+				btype = []openrtb.BannerType{openrtb.BannerTypeXHTMLText, openrtb.BannerTypeXHTML}
+			} else {
+				// Blocked creative types for regular banner formats (3 = JavaScript Ad, 4 = Iframe Ad)
+				btype = []openrtb.BannerType{openrtb.BannerTypeJS, openrtb.BannerTypeFrame}
+			}
+		} else {
+			w, h, wm, wh = max(w, wm), max(h, wh), 0, 0
+			//  BANNER = 1;
+			//  POPUNDER = 4;
+			//  INTERSTITIAL = 5;
+			//  PREROLL = 6;
+			//  TAB = 7;
+			ext = json.RawMessage(`{"type":"interstitial","format":5}`)
+		}
 		banner = &openrtb.Banner{
-			ID:        "",
-			Width:     max(w, 5),
-			Height:    max(h, 5),
-			WidthMax:  wm,
-			HeightMax: wh,
-			WidthMin:  0,
-			HeightMin: 0,
-			Position:  openrtb.AdPosition(imp.Pos),
-			BlockedTypes: gocast.IfThen(format.IsProxy(),
-				[]openrtb.BannerType{openrtb.BannerTypeXHTMLText, openrtb.BannerTypeXHTML},
-				[]openrtb.BannerType{openrtb.BannerTypeJS, openrtb.BannerTypeFrame},
-			),
+			ID:           "",
+			Width:        max(w, 5),
+			Height:       max(h, 5),
+			WidthMax:     wm,
+			HeightMax:    wh,
+			WidthMin:     0,
+			HeightMin:    0,
+			Position:     openrtb.AdPosition(imp.Pos),
+			BlockedTypes: btype,
 			BlockedAttrs: nil,
 			MIMEs:        nil,
 			TopFrame:     0,

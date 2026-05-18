@@ -17,13 +17,13 @@ import (
 
 func TestRequestToRTBv3_ID(t *testing.T) {
 	req := makeBidRequest()
-	result := requestToRTBv3(req)
+	result, _ := requestToRTBv3(req)
 	assert.Equal(t, req.ID(), result.ID)
 }
 
 func TestRequestToRTBv3_HasImpressions(t *testing.T) {
 	req := makeBidRequest()
-	result := requestToRTBv3(req)
+	result, _ := requestToRTBv3(req)
 	assert.NotEmpty(t, result.Impressions, "expected at least one OpenRTB impression")
 }
 
@@ -46,7 +46,7 @@ func TestRequestToRTBv3_BannerImpressionSize(t *testing.T) {
 	require.NotEmpty(t, imp.Formats(), "impression should have at least one format after InitFormats")
 
 	req := makeBidRequestWithImps([]*adtype.Impression{imp})
-	result := requestToRTBv3(req)
+	result, _ := requestToRTBv3(req)
 
 	require.NotEmpty(t, result.Impressions)
 	require.NotNil(t, result.Impressions[0].Banner)
@@ -54,25 +54,25 @@ func TestRequestToRTBv3_BannerImpressionSize(t *testing.T) {
 
 func TestRequestToRTBv3_DefaultCurrencyUSD(t *testing.T) {
 	req := makeBidRequest()
-	result := requestToRTBv3(req)
+	result, _ := requestToRTBv3(req)
 	assert.Contains(t, result.Currencies, "USD")
 }
 
 func TestRequestToRTBv3_WithCustomCurrency(t *testing.T) {
 	req := makeBidRequest()
-	result := requestToRTBv3(req, withCurrencies("EUR", "GBP"))
+	result, _ := requestToRTBv3(req, withCurrencies("EUR", "GBP"))
 	assert.Equal(t, []string{"EUR", "GBP"}, result.Currencies)
 }
 
 func TestRequestToRTBv3_AuctionType(t *testing.T) {
 	req := makeBidRequest()
-	result := requestToRTBv3(req, requestoptions.WithAuctionType(types.AuctionType(2)))
+	result, _ := requestToRTBv3(req, requestoptions.WithAuctionType(types.AuctionType(2)))
 	assert.Equal(t, 2, result.AuctionType)
 }
 
 func TestRequestToRTBv3_TMax(t *testing.T) {
 	req := makeBidRequest()
-	result := requestToRTBv3(req, requestoptions.WithMaxTimeDuration(300*time.Millisecond))
+	result, _ := requestToRTBv3(req, requestoptions.WithMaxTimeDuration(300*time.Millisecond))
 	assert.Equal(t, 300, result.TimeMax)
 }
 
@@ -80,7 +80,7 @@ func TestRequestToRTBv3_BidFloor(t *testing.T) {
 	imp := makeBannerImpression()
 	imp.BidFloorCPM = 0
 	req := makeBidRequestWithImps([]*adtype.Impression{imp})
-	result := requestToRTBv3(req, requestoptions.WithBidFloor(0.5))
+	result, _ := requestToRTBv3(req, requestoptions.WithBidFloor(0.5))
 
 	require.NotEmpty(t, result.Impressions)
 	assert.GreaterOrEqual(t, result.Impressions[0].BidFloor, 0.5)
@@ -88,7 +88,7 @@ func TestRequestToRTBv3_BidFloor(t *testing.T) {
 
 func TestRequestToRTBv3_NoImpressions(t *testing.T) {
 	req := makeBidRequestWithImps([]*adtype.Impression{})
-	result := requestToRTBv3(req)
+	result, _ := requestToRTBv3(req)
 	assert.Empty(t, result.Impressions)
 }
 
