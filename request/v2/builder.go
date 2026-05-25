@@ -13,25 +13,29 @@ import (
 	requestoptions "github.com/geniusrabbit/adsource-openrtb/request/options"
 )
 
+type formatChecker func(format *types.Format, intr bool) bool
+
 // Builder constructs OpenRTB v2 bid requests.
-type Builder struct{}
+type Builder struct {
+	checker formatChecker
+}
 
 // New returns a new Builder.
-func New() *Builder { return &Builder{} }
+func New(checker formatChecker) *Builder { return &Builder{checker: checker} }
 
 // Build constructs an OpenRTB v2 bid request and returns it as requestoptions.RTBRequest.
 func (b *Builder) Build(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (requestoptions.RTBRequest, error) {
-	return requestToRTBv2(req, opts...)
+	return b.requestToRTBv2(req, opts...)
 }
 
-func requestToRTBv2(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (*openrtb.BidRequest, error) {
+func (b *Builder) requestToRTBv2(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (*openrtb.BidRequest, error) {
 	var opt requestoptions.BidRequestRTBOptions
 	for _, fn := range opts {
 		fn(&opt)
 	}
 	bidReq := &openrtb.BidRequest{
 		ID:          req.ID(),
-		Imp:         openrtbV2Impressions(req, &opt),
+		Imp:         b.openrtbV2Impressions(req, &opt),
 		Site:        uopenrtb.SiteFrom(req.SiteInfo()),
 		App:         uopenrtb.ApplicationFrom(req.AppInfo()),
 		Device:      uopenrtb.DeviceFrom(req.DeviceInfo(), req.UserInfo().Geo),
@@ -52,11 +56,13 @@ func requestToRTBv2(req adtype.BidRequester, opts ...requestoptions.BidRequestRT
 	return bidReq, nil
 }
 
-func openrtbV2Impressions(req adtype.BidRequester, opts *requestoptions.BidRequestRTBOptions) (list []openrtb.Impression) {
+func (b *Builder) openrtbV2Impressions(req adtype.BidRequester, opts *requestoptions.BidRequestRTBOptions) (list []openrtb.Impression) {
 	for _, imp := range req.Impressions() {
 		for _, format := range imp.Formats() {
-			if openRTBImp := openrtbV2ImpressionByFormat(req, imp, format, opts); openRTBImp != nil {
-				list = append(list, *openRTBImp)
+			if b.checker == nil || b.checker(format, imp.IsInterstitial()) {
+				if openRTBImp := openrtbV2ImpressionByFormat(req, imp, format, opts); openRTBImp != nil {
+					list = append(list, *openRTBImp)
+				}
 			}
 		}
 	}
@@ -302,12 +308,16 @@ func uopenrtbOpenrtbV2UserInfo(u *adtype.User) *openrtb.User {
 		}
 		data = append(data, dataItem)
 	}
+	gender := u.Gender
+	if gender != "M" && gender != "F" && gender != "O" {
+		gender = ""
+	}
 	return &openrtb.User{
 		ID:         u.ID,       // Unique consumer ID of this user on the exchange
 		BuyerID:    "",         // Buyer-specific ID for the user as mapped by the exchange for the buyer.
 		BuyerUID:   "",         // Buyer-specific ID for the user as mapped by the exchange for the buyer.
 		YOB:        0,          // Year of birth as a 4-digit integer.
-		Gender:     u.Gender,   // Gender ("M": male, "F" female, "O" Other)
+		Gender:     gender,     // Gender ("M": male, "F" female, "O" Other)
 		Keywords:   u.Keywords, // Comma separated list of keywords, interests, or intent
 		CustomData: "",         // Optional feature to pass bidder data set in the exchange's cookie.
 		Geo:        uopenrtb.GeoFrom(u.Geo),

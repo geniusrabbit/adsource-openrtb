@@ -13,25 +13,29 @@ import (
 	requestoptions "github.com/geniusrabbit/adsource-openrtb/request/options"
 )
 
+type formatChecker func(format *types.Format, intr bool) bool
+
 // Builder constructs OpenRTB v3 bid requests.
-type Builder struct{}
+type Builder struct {
+	checker formatChecker
+}
 
 // New returns a new Builder.
-func New() *Builder { return &Builder{} }
+func New(checker formatChecker) *Builder { return &Builder{checker: checker} }
 
 // Build constructs an OpenRTB v3 bid request and returns it as requestoptions.RTBRequest.
 func (b *Builder) Build(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (requestoptions.RTBRequest, error) {
-	return requestToRTBv3(req, opts...)
+	return b.requestToRTBv3(req, opts...)
 }
 
-func requestToRTBv3(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (*openrtb.BidRequest, error) {
+func (b *Builder) requestToRTBv3(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (*openrtb.BidRequest, error) {
 	var opt requestoptions.BidRequestRTBOptions
 	for _, fn := range opts {
 		fn(&opt)
 	}
 	bidReq := &openrtb.BidRequest{
 		ID:                req.ID(),
-		Impressions:       openrtbV3Impressions(req, &opt),
+		Impressions:       b.openrtbV3Impressions(req, &opt),
 		Site:              uopenrtbOpenrtbV3SiteFrom(req.SiteInfo()),
 		App:               uopenrtbOpenrtbV3ApplicationFrom(req.AppInfo()),
 		Device:            uopenrtbOpenrtbV3DeviceFrom(req.DeviceInfo(), req.UserInfo().Geo),
@@ -52,11 +56,13 @@ func requestToRTBv3(req adtype.BidRequester, opts ...requestoptions.BidRequestRT
 	return bidReq, nil
 }
 
-func openrtbV3Impressions(req adtype.BidRequester, opts *requestoptions.BidRequestRTBOptions) (list []openrtb.Impression) {
+func (b *Builder) openrtbV3Impressions(req adtype.BidRequester, opts *requestoptions.BidRequestRTBOptions) (list []openrtb.Impression) {
 	for _, imp := range req.Impressions() {
 		for _, format := range imp.Formats() {
-			if openRTBImp := openrtbV3ImpressionByFormat(req, imp, format, opts); openRTBImp != nil {
-				list = append(list, *openRTBImp)
+			if b.checker == nil || b.checker(format, imp.IsInterstitial()) {
+				if openRTBImp := openrtbV3ImpressionByFormat(req, imp, format, opts); openRTBImp != nil {
+					list = append(list, *openRTBImp)
+				}
 			}
 		}
 	}

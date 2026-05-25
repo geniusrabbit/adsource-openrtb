@@ -69,6 +69,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/geniusrabbit/adcorelib/admodels"
+	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adquery/bidresponse"
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/context/ctxlogger"
@@ -121,11 +122,22 @@ func newDriver(_ context.Context, source *admodels.RTBSource, netClient httpclie
 	if netClient == nil {
 		return nil, ErrNilHTTPClient
 	}
-	var builder requestoptions.RequestBuilder
+	var (
+		builder       requestoptions.RequestBuilder
+		formatChecker = func(format *types.Format, isInterstitial bool) bool {
+			if isInterstitial {
+				if len(source.Filter.InterstitialFormats) == 0 {
+					return source.Filter.TestFormat(format)
+				}
+				return source.Filter.TestInterstitialFormat(format)
+			}
+			return source.Filter.TestFormat(format)
+		}
+	)
 	if source.Protocol == "openrtb3" {
-		builder = requestv3.New()
+		builder = requestv3.New(formatChecker)
 	} else {
-		builder = requestv2.New()
+		builder = requestv2.New(formatChecker)
 	}
 	source.MinimalWeight = max(source.MinimalWeight, defaultMinWeight)
 	return &driver{
