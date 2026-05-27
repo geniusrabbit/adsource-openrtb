@@ -1,4 +1,3 @@
-//
 // @project GeniusRabbit corelib 2016 - 2019, 2024 - 2025
 // @author Dmitry Ponomarev <demdxx@gmail.com> 2016 - 2019, 2024 - 2025
 //
@@ -143,6 +142,7 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 				zap.String("markup", bid.AdMarkup),
 				zap.Error(err),
 			)
+			return nil
 		}
 	case format.IsNative():
 		if bidItem, err = native.New(r.Req, r.Src, bid, imp, format); err != nil {
@@ -151,6 +151,7 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 				zap.String("markup", bid.AdMarkup),
 				zap.Error(err),
 			)
+			return nil
 		}
 	case format.IsBanner() || format.IsProxy():
 		if bidItem, err = banner.New(r.Req, r.Src, bid, imp, format); err != nil {
@@ -159,6 +160,7 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 				zap.String("markup", bid.AdMarkup),
 				zap.Error(err),
 			)
+			return nil
 		}
 	case format.IsVideo():
 		if bidItem, err = vastp.New(r.Req, r.Src, bid, imp, format); err != nil {
@@ -167,6 +169,7 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 				zap.String("markup", bid.AdMarkup),
 				zap.Error(err),
 			)
+			return nil
 		}
 	}
 
