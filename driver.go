@@ -225,49 +225,16 @@ func (d *driver) Bid(request adtype.BidRequester) (response adtype.Response) {
 	d.rpsCurrent.Inc(1)
 	d.latencyMetrics.BeginQuery()
 
-	httpRequest, err := d.request(request)
+	// Send request to source and get response
+	response, err := d.doServerRequest(request, beginTime)
 	if err != nil {
-		return adtype.NewErrorResponse(request, err)
-	}
-
-	// Send request to source
-	resp, err := d.netClient.Do(httpRequest)
-	d.latencyMetrics.UpdateQueryLatency(time.Duration(fasttime.UnixTimestampNano() - beginTime))
-
-	// Process response status and errors
-	if err != nil {
-		d.processHTTPReponse(resp, err)
-		ctxlogger.Get(request.Context()).Debug("bid",
-			zap.String("source_url", d.source.URL),
-			zap.Error(err))
-		return adtype.NewErrorResponse(request, err)
-	}
-	defer func() { _ = resp.Close() }()
-
-	// Log response status and latency
-	ctxlogger.Get(request.Context()).Debug("bid",
-		zap.String("source_url", d.source.URL),
-		zap.String("http_response_status_txt", http.StatusText(resp.StatusCode())),
-		zap.Int("http_response_status", resp.StatusCode()))
-
-	// NOTE: StatusNoContent - is the standard OpenRTB response for no bid, but some sources can return StatusNotFound in this case
-	if resp.StatusCode() == http.StatusNoContent || resp.StatusCode() == http.StatusNotFound {
-		d.latencyMetrics.IncNobid()
-		return bidresponse.NewEmptyResponse(request, d, ErrResponseNoBid)
-	}
-
-	// Not success status code
-	if resp.StatusCode() != http.StatusOK {
-		d.processHTTPReponse(resp, nil)
-		return adtype.NewErrorResponse(request, &HTTPStatusError{Code: resp.StatusCode()})
-	}
-
-	// Decode response body
-	if res, err := d.unmarshal(request, resp.Body()); d.source.Options.Trace != 0 && err != nil {
-		response = adtype.NewErrorResponse(request, err)
-		ctxlogger.Get(request.Context()).Error("bid response", zap.Error(err))
-	} else if res != nil {
-		response = res
+		if errors.Is(err, ErrResponseNoBid) {
+			// No bid is not an error, so we just return empty response
+			response = bidresponse.NewEmptyResponse(request, d, err)
+		} else {
+			response = adtype.NewErrorResponse(request, err)
+			ctxlogger.Get(request.Context()).Error("bid", zap.Error(err))
+		}
 	}
 
 	if response != nil && response.Error() == nil {
@@ -278,8 +245,6 @@ func (d *driver) Bid(request adtype.BidRequester) (response adtype.Response) {
 		}
 	}
 
-	// Process response status and errors
-	d.processHTTPReponse(resp, err)
 	if response == nil {
 		response = bidresponse.NewEmptyResponse(request, d, err)
 	}
@@ -341,6 +306,59 @@ func (d *driver) Metrics() *openlatency.MetricsInfo {
 ///////////////////////////////////////////////////////////////////////////////
 /// Internal methods
 ///////////////////////////////////////////////////////////////////////////////
+
+func (d *driver) doServerRequest(request adtype.BidRequester, beginTime uint64) (response adtype.Response, err error) {
+	httpRequest, err := d.request(request)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send request to source
+	resp, err := d.netClient.Do(httpRequest)
+	d.latencyMetrics.UpdateQueryLatency(time.Duration(fasttime.UnixTimestampNano() - beginTime))
+
+	// Process response status and errors
+	if err != nil {
+		d.processHTTPReponse(resp, err)
+		ctxlogger.Get(request.Context()).Debug("bid",
+			zap.String("source_url", d.source.URL),
+			zap.Error(err))
+		return nil, err
+	}
+	defer func() { _ = resp.Close() }()
+
+	// Log response status and latency
+	ctxlogger.Get(request.Context()).Debug("bid",
+		zap.String("source_url", d.source.URL),
+		zap.String("http_response_status_txt", http.StatusText(resp.StatusCode())),
+		zap.Int("http_response_status", resp.StatusCode()))
+
+	// NOTE: StatusNoContent - is the standard OpenRTB response for no bid, but some sources can return StatusNotFound in this case
+	if resp.StatusCode() == http.StatusNoContent || resp.StatusCode() == http.StatusNotFound {
+		d.processHTTPReponse(resp, nil)
+		d.latencyMetrics.IncNobid()
+		return nil, ErrResponseNoBid
+	}
+
+	// Not success status code
+	if resp.StatusCode() != http.StatusOK {
+		d.processHTTPReponse(resp, nil)
+		return nil, &HTTPStatusError{Code: resp.StatusCode()}
+	}
+
+	// Decode response body
+	if res, err := d.unmarshal(request, resp.Body()); d.source.Options.Trace != 0 && err != nil {
+		response = adtype.NewErrorResponse(request, err)
+		ctxlogger.Get(request.Context()).Error("bid response", zap.Error(err))
+	} else if res != nil {
+		response = res
+	}
+
+	// Process response status and errors
+	d.processHTTPReponse(resp, err)
+
+	return response, nil
+}
 
 // prepare request for RTB
 func (d *driver) request(request adtype.BidRequester) (req httpclient.Request, err error) {
