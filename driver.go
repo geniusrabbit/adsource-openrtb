@@ -220,31 +220,26 @@ func (d *driver) ProcessResponseItem(response adtype.Response, item adtype.Respo
 	if response == nil || response.Error() != nil {
 		return
 	}
-	for _, ad := range response.Ads() {
-		switch bid := ad.(type) {
-		case adtype.ResponseItem:
-			if bid.Source().ID() != d.ID() {
-				ctxlogger.Get(response.Context()).Debug("bid source mismatch",
-					zap.Uint64("source_id", bid.Source().ID()),
-					zap.Uint64("driver_id", d.ID()),
-				)
-				continue
-			}
-			if nurl := bid.ContentItemString(adtype.ContentItemNotifyDisplayURL); nurl != "" {
-				ctxlogger.Get(response.Context()).Info("ping", zap.String("url", nurl))
-				err := eventstream.WinsFromContext(response.Context()).Send(response.Context(), nurl)
-				if err != nil {
-					ctxlogger.Get(response.Context()).Error("ping error", zap.Error(err))
-				}
-			}
-			err := eventstream.StreamFromContext(response.Context()).
-				Send(events.SourceWin, events.StatusUndefined, response, bid)
-			if err != nil {
-				ctxlogger.Get(response.Context()).Error("send win event", zap.Error(err))
-			}
-		default:
-			// Dummy...
+
+	ctxl := response.Context()
+
+	// Send win notification if NotifyWinURL is set in the bid content and the bid is a winner.
+	if nurl := item.ContentItemString(adtype.ContentItemNotifyWinURL); nurl != "" {
+		if prep := adtype.ContentMappingPreparer(response, item); prep != nil {
+			nurl = prep.Replace(nurl)
 		}
+		ctxlogger.Get(ctxl).Info("ping", zap.String("url", nurl))
+		err := eventstream.WinsFromContext(ctxl).Send(ctxl, nurl)
+		if err != nil {
+			ctxlogger.Get(ctxl).Error("ping error", zap.Error(err))
+		}
+	}
+
+	// Send win event to event stream for tracking
+	err := eventstream.StreamFromContext(ctxl).
+		Send(events.SourceWin, events.StatusUndefined, response, item)
+	if err != nil {
+		ctxlogger.Get(ctxl).Error("send win event", zap.Error(err))
 	}
 }
 
