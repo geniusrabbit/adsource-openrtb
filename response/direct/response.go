@@ -93,9 +93,13 @@ func (it *ResponseBidItem) ContentItemString(name string) string {
 func (it *ResponseBidItem) ContentItem(name string) any {
 	switch name {
 	case adtype.ContentItemIFrameURL:
-		return it.DirectLink
+		if it.Imp.IsInterstitial() {
+			return it.DirectLink
+		}
 	case adtype.ContentItemContent:
-		return `<iframe src="` + it.DirectLink + `" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups allow-top-navigation-by-user-activation" frameborder="0" style="width:100%;height:100%;"></iframe>`
+		if it.Imp.IsInterstitial() {
+			return `<iframe src="` + it.DirectLink + `" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups allow-top-navigation-by-user-activation" frameborder="0" style="width:100%;height:100%;"></iframe>`
+		}
 	case adtype.ContentItemLink:
 		return it.DirectLink
 	case adtype.ContentItemNotifyWinURL:

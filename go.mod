@@ -7,7 +7,7 @@ require (
 	github.com/bsm/openrtb/v3 v3.2.1
 	github.com/demdxx/gocast/v2 v2.11.0
 	github.com/demdxx/xtypes v0.3.1
-	github.com/geniusrabbit/adcorelib v0.0.0-20260527150105-90bf84b182b7
+	github.com/geniusrabbit/adcorelib v0.0.0-20260604142346-ee306f778d42
 	github.com/geniusrabbit/udetect v0.0.0-20251009164230-11a5e0a2d3b8
 	github.com/haxqer/vast v0.0.0-20240812015402-9f377f9bd883
 	github.com/pkg/errors v0.9.1
@@ -37,7 +37,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.67.5 // indirect
+	github.com/prometheus/common v0.68.1 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/segmentio/ksuid v1.0.4 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
@@ -46,9 +46,8 @@ require (
 	github.com/valyala/fasthttp v1.71.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/exp v0.0.0-20260527015227-08cc5374adb3 // indirect
+	golang.org/x/exp v0.0.0-20260603202125-055de637280b // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect

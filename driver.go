@@ -50,26 +50,16 @@
 package adsourceopenrtb
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-	"os"
 	"slices"
-	"strconv"
-	"strings"
 	"sync/atomic"
 	"time"
 
-	"github.com/bsm/openrtb"
 	"github.com/demdxx/gocast/v2"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/geniusrabbit/adcorelib/admodels"
-	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adquery/bidresponse"
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/context/ctxlogger"
@@ -77,22 +67,19 @@ import (
 	"github.com/geniusrabbit/adcorelib/eventtraking/events"
 	"github.com/geniusrabbit/adcorelib/eventtraking/eventstream"
 	"github.com/geniusrabbit/adcorelib/fasttime"
-	"github.com/geniusrabbit/adcorelib/net/httpclient"
 	"github.com/geniusrabbit/adcorelib/openlatency"
 	"github.com/geniusrabbit/adcorelib/openlatency/prometheuswrapper"
 
-	requestoptions "github.com/geniusrabbit/adsource-openrtb/request/options"
-	requestv2 "github.com/geniusrabbit/adsource-openrtb/request/v2"
-	requestv3 "github.com/geniusrabbit/adsource-openrtb/request/v3"
-	response "github.com/geniusrabbit/adsource-openrtb/response"
+	"github.com/geniusrabbit/adsource-openrtb/response/requester"
 )
 
 const (
-	headerRequestOpenRTBVersion  = "X-Openrtb-Version"
-	headerRequestOpenRTBVersion2 = "2.5"
-	headerRequestOpenRTBVersion3 = "3.0"
-	defaultMinWeight             = 0.001
+	defaultMinWeight = 0.001
 )
+
+// RTBRequester wraps the execution of a single RTB server round-trip.
+// It is re-exported from response/requester for convenience.
+type RTBRequester = requester.RTBRequester
 
 type driver struct {
 	lastRequestTime uint64
@@ -105,46 +92,21 @@ type driver struct {
 	// Original source model
 	source *admodels.RTBSource
 
-	// Request headers
-	headers map[string]string
-
-	// Client of HTTP requests
-	netClient httpclient.Driver
-
-	// Request builder (v2 or v3 depending on source.Protocol)
-	builder requestoptions.RequestBuilder
+	// RTB source requester (performs actual HTTP call)
+	rtbRequester RTBRequester
 }
 
-func newDriver(_ context.Context, source *admodels.RTBSource, netClient httpclient.Driver, _ ...any) (*driver, error) {
+func newDriver(_ context.Context, source *admodels.RTBSource, rtbRequester RTBRequester, _ ...any) (*driver, error) {
 	if source == nil {
 		return nil, ErrNilSource
 	}
-	if netClient == nil {
+	if rtbRequester == nil {
 		return nil, ErrNilHTTPClient
-	}
-	var (
-		builder       requestoptions.RequestBuilder
-		formatChecker = func(format *types.Format, isInterstitial bool) bool {
-			if isInterstitial {
-				if len(source.Filter.InterstitialFormats) == 0 {
-					return source.Filter.TestFormat(format)
-				}
-				return source.Filter.TestInterstitialFormat(format)
-			}
-			return source.Filter.TestFormat(format)
-		}
-	)
-	if source.Protocol == "openrtb3" {
-		builder = requestv3.New(formatChecker)
-	} else {
-		builder = requestv2.New(formatChecker)
 	}
 	source.MinimalWeight = max(source.MinimalWeight, defaultMinWeight)
 	return &driver{
-		source:    source,
-		headers:   source.Headers.DataOr(nil),
-		netClient: netClient,
-		builder:   builder,
+		source:       source,
+		rtbRequester: rtbRequester,
 		latencyMetrics: prometheuswrapper.NewWrapperDefault("adsource_",
 			[]string{"id", "protocol", "driver"},
 			[]string{gocast.Str(source.ID), source.Protocol, "openrtb"},
@@ -226,7 +188,7 @@ func (d *driver) Bid(request adtype.BidRequester) (response adtype.Response) {
 	d.latencyMetrics.BeginQuery()
 
 	// Send request to source and get response
-	response, err := d.doServerRequest(request, beginTime)
+	response, err := d.rtbRequester.Request(request, beginTime)
 	if err != nil {
 		if errors.Is(err, ErrResponseNoBid) {
 			// No bid is not an error, so we just return empty response
@@ -237,6 +199,8 @@ func (d *driver) Bid(request adtype.BidRequester) (response adtype.Response) {
 		}
 	}
 
+	// Update metrics based on response
+	// Success if there are ads in the response and no error; NoBid if no ads but also no error; otherwise, it's an error case
 	if response != nil && response.Error() == nil {
 		if len(response.Ads()) > 0 {
 			d.latencyMetrics.IncSuccess()
@@ -301,234 +265,4 @@ func (d *driver) Metrics() *openlatency.MetricsInfo {
 	info.Protocol = d.source.Protocol
 	info.QPSLimit = d.source.RPS
 	return &info
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Internal methods
-///////////////////////////////////////////////////////////////////////////////
-
-func (d *driver) doServerRequest(request adtype.BidRequester, beginTime uint64) (response adtype.Response, err error) {
-	httpRequest, err := d.request(request)
-	if err != nil {
-		return nil, err
-	}
-
-	// Send request to source
-	resp, err := d.netClient.Do(httpRequest)
-	d.latencyMetrics.UpdateQueryLatency(time.Duration(fasttime.UnixTimestampNano() - beginTime))
-
-	// Process response status and errors
-	if err != nil {
-		d.processHTTPReponse(resp, err)
-		ctxlogger.Get(request.Context()).Debug("bid",
-			zap.String("source_url", d.source.URL),
-			zap.Error(err))
-		return nil, err
-	}
-	defer func() { _ = resp.Close() }()
-
-	// Log response status and latency
-	ctxlogger.Get(request.Context()).Debug("bid",
-		zap.String("source_url", d.source.URL),
-		zap.String("http_response_status_txt", http.StatusText(resp.StatusCode())),
-		zap.Int("http_response_status", resp.StatusCode()))
-
-	// NOTE: StatusNoContent - is the standard OpenRTB response for no bid, but some sources can return StatusNotFound in this case
-	if resp.StatusCode() == http.StatusNoContent || resp.StatusCode() == http.StatusNotFound {
-		d.processHTTPReponse(resp, nil)
-		d.latencyMetrics.IncNobid()
-		return nil, ErrResponseNoBid
-	}
-
-	// Not success status code
-	if resp.StatusCode() != http.StatusOK {
-		d.processHTTPReponse(resp, nil)
-		return nil, &HTTPStatusError{Code: resp.StatusCode()}
-	}
-
-	// Decode response body
-	if res, err := d.unmarshal(request, resp.Body()); d.source.Options.Trace != 0 && err != nil {
-		response = adtype.NewErrorResponse(request, err)
-		ctxlogger.Get(request.Context()).Error("bid response", zap.Error(err))
-	} else if res != nil {
-		response = res
-	}
-
-	// Process response status and errors
-	d.processHTTPReponse(resp, err)
-
-	return response, nil
-}
-
-// prepare request for RTB
-func (d *driver) request(request adtype.BidRequester) (req httpclient.Request, err error) {
-	var (
-		rtbRequest requestoptions.RTBRequest
-		bufData    bytes.Buffer
-	)
-
-	var buildErr error
-	rtbRequest, buildErr = d.builder.Build(request, d.getRequestOptions()...)
-	if buildErr != nil {
-		return nil, buildErr
-	}
-
-	if d.source.Options.Trace != 0 {
-		ctxlogger.Get(request.Context()).Error("trace marshal",
-			zap.String("src_url", d.source.URL))
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		_ = enc.Encode(rtbRequest)
-	}
-
-	if err := rtbRequest.Validate(); err != nil {
-		return nil,
-			errors.Wrap(err, fmt.Sprintf("source[%s]: %d", d.source.Protocol, d.source.ID))
-	}
-
-	// Prepare data for request
-	if err = json.NewEncoder(&bufData).Encode(rtbRequest); err != nil {
-		return nil,
-			errors.Wrap(err, fmt.Sprintf("source[%s]: %d", d.source.Protocol, d.source.ID))
-	}
-
-	// Create new request
-	if req, err = d.netClient.Request(d.source.Method, d.source.URL, &bufData); err != nil {
-		return req, err
-	}
-
-	d.fillRequest(request, req)
-	return req, nil
-}
-
-func (d *driver) unmarshal(request adtype.BidRequester, r io.Reader) (_ *response.BidResponse, err error) {
-	var bidResp openrtb.BidResponse
-
-	switch d.source.RequestType {
-	case RequestTypeJSON:
-		if d.source.Options.Trace != 0 {
-			var data []byte
-			if data, err = io.ReadAll(r); err == nil {
-				var buf bytes.Buffer
-				_ = json.Indent(&buf, data, "", "  ")
-				ctxlogger.Get(request.Context()).Error("trace unmarshal",
-					zap.String("src_url", d.source.URL))
-				_, _ = fmt.Fprintln(os.Stdout, "UNMARSHAL: "+buf.String())
-				err = json.Unmarshal(data, &bidResp)
-			}
-		} else {
-			err = json.NewDecoder(r).Decode(&bidResp)
-		}
-	case RequestTypeXML, RequestTypeProtobuff:
-		err = &UnsupportedTypeError{TypeName: d.source.RequestType.Name()}
-	default:
-		err = &UndefinedTypeError{TypeName: d.source.RequestType.Name()}
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Check response for support HTTPS
-	if request.IsSecure() {
-		for _, seat := range bidResp.SeatBid {
-			for _, bid := range seat.Bid {
-				if strings.Contains(bid.AdMarkup, "http://") {
-					return nil, ErrResponseAreNotSecure
-				}
-			}
-		} // end for
-	}
-
-	// Check response for price limits
-	if d.source.MaxBid > 0 {
-		maxBid := d.source.MaxBid.Float64()
-		for i, seat := range bidResp.SeatBid {
-			changed := false
-			for j, bid := range seat.Bid {
-				if bid.Price > maxBid {
-					// Remove bid from response if price is more than max bid
-					// TODO: add metrics for this case
-					seat.Bid = append(seat.Bid[:j], seat.Bid[j+1:]...)
-					changed = true
-				}
-			}
-			if changed {
-				if len(seat.Bid) == 0 {
-					bidResp.SeatBid = append(bidResp.SeatBid[:i], bidResp.SeatBid[i+1:]...)
-				} else {
-					bidResp.SeatBid[i] = seat
-				}
-			}
-		}
-	}
-
-	// If the response is empty, then return nil
-	if len(bidResp.SeatBid) == 0 {
-		return nil, nil
-	}
-
-	// Build response
-	bidResponse := &response.BidResponse{
-		Src:         d,
-		Req:         request,
-		BidResponse: bidResp,
-	}
-
-	bidResponse.Prepare()
-	return bidResponse, nil
-}
-
-// fillRequest of HTTP
-func (d *driver) fillRequest(request adtype.BidRequester, httpReq httpclient.Request) {
-	httpReq.SetHeader("Content-Type", "application/json")
-
-	// Set OpenRTB version
-	if _, ok := d.headers[headerRequestOpenRTBVersion]; !ok {
-		if d.source.Protocol == "openrtb3" {
-			httpReq.SetHeader(headerRequestOpenRTBVersion, headerRequestOpenRTBVersion3)
-		} else {
-			httpReq.SetHeader(headerRequestOpenRTBVersion, headerRequestOpenRTBVersion2)
-		}
-	}
-
-	// Set request timemark for latency tracking
-	httpReq.SetHeader(openlatency.HTTPHeaderRequestTimemark,
-		strconv.FormatInt(openlatency.RequestInitTime(request.Time()), 10))
-
-	// Fill default headers
-	for key, value := range d.headers {
-		httpReq.SetHeader(key, value)
-	}
-}
-
-// @link https://golang.org/src/net/http/status.go
-func (d *driver) processHTTPReponse(resp httpclient.Response, err error) {
-	switch {
-	case err != nil || resp == nil ||
-		(resp.StatusCode() != http.StatusOK &&
-			resp.StatusCode() != http.StatusNoContent &&
-			resp.StatusCode() != http.StatusNotFound):
-		if errors.Is(err, http.ErrHandlerTimeout) {
-			d.latencyMetrics.IncTimeout()
-		}
-		d.errorCounter.Inc()
-		if resp == nil {
-			d.latencyMetrics.IncError(openlatency.MetricErrorHTTP, "")
-		} else {
-			d.latencyMetrics.IncError(openlatency.MetricErrorHTTP, http.StatusText(resp.StatusCode()))
-		}
-	default:
-		d.errorCounter.Dec()
-	}
-}
-
-func (d *driver) getRequestOptions() []requestoptions.BidRequestRTBOption {
-	return []requestoptions.BidRequestRTBOption{
-		requestoptions.WithRTBOpenNativeVersion("1.1"),
-		requestoptions.WithFormatFilter(d.source.TestFormat),
-		requestoptions.WithMaxTimeDuration(time.Duration(d.source.Timeout) * time.Millisecond),
-		requestoptions.WithAuctionType(d.source.AuctionType),
-		requestoptions.WithBidFloor(d.source.MinBid.Float64()),
-	}
 }

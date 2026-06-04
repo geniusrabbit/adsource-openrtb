@@ -38,44 +38,42 @@ package adsourceopenrtb
 
 import (
 	"context"
-	"time"
 
-	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/adcorelib/admodels"
 	"github.com/geniusrabbit/adcorelib/adtype"
-	"github.com/geniusrabbit/adcorelib/net/httpclient"
 	"github.com/geniusrabbit/adcorelib/platform/info"
+
+	rtbreq "github.com/geniusrabbit/adsource-openrtb/response/requester"
 )
 
 const (
-	protocol       = "openrtb"
-	defaultTimeout = 150 * time.Millisecond
+	protocol = "openrtb"
 )
 
-type NewClientFnk func(context.Context, time.Duration) (httpclient.Driver, error)
+type NewRequesterFnk func(context.Context, *admodels.RTBSource, ...any) (rtbreq.RTBRequester, error)
 
 type factory struct {
-	newClientFnk NewClientFnk
+	newReqFnk NewRequesterFnk
 }
 
-func NewFactory(newClient NewClientFnk) *factory {
+func NewFactory(newRequester NewRequesterFnk) *factory {
 	return &factory{
-		newClientFnk: newClient,
+		newReqFnk: newRequester,
 	}
 }
 
 func (fc *factory) New(ctx context.Context, source *admodels.RTBSource, opts ...any) (adtype.SourceTester, error) {
-	ncli, err := fc.newClientFnk(ctx, gocast.IfThen(
-		source.Timeout > 0,
-		time.Duration(source.Timeout)*time.Millisecond,
-		defaultTimeout,
-	))
+	requester, err := fc.newReqFnk(ctx, source, opts...)
 	if err != nil {
 		return nil, err
 	}
-	dr, err := newDriver(ctx, source, ncli, opts...)
+	dr, err := newDriver(ctx, source, requester, opts...)
 	if err != nil {
 		return nil, err
+	}
+	// Wire the driver as the adtype.Source for bid response items
+	if ssrc, ok := requester.(interface{ SetSource(src adtype.Source) }); ok {
+		ssrc.SetSource(dr)
 	}
 	return dr, nil
 }

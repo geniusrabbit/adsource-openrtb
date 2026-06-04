@@ -11,6 +11,7 @@ package common
 
 import (
 	"context"
+	"encoding/base64"
 
 	"github.com/bsm/openrtb"
 
@@ -373,4 +374,16 @@ func (it *BaseBidItem) Get(key string) (res any) {
 		return res
 	}
 	return it.ctx.Value(key)
+}
+
+// ContentMapping returns a map that can be used to prepare ad markup content
+func (it *BaseBidItem) ContentMapping() map[string]string {
+	cpmPrice := (it.FinalPrice(adtype.ActionImpression) * 1000).String()
+	base64Price := base64.URLEncoding.EncodeToString([]byte(cpmPrice))
+	return map[string]string{
+		"${AUCTION_PRICE}":             cpmPrice,
+		"${AUCTION_PRICE:B64}":         base64Price,
+		"%24%7BAUCTION_PRICE%7D":       cpmPrice,
+		"%24%7BAUCTION_PRICE%3AB64%7D": base64Price,
+	}
 }

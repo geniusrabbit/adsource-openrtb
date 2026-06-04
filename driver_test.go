@@ -19,6 +19,8 @@ import (
 	"github.com/geniusrabbit/adcorelib/adquery/bidrequest"
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/net/httpclient"
+
+	rtbreq "github.com/geniusrabbit/adsource-openrtb/response/requester"
 )
 
 // ─── Mock HTTP infrastructure ────────────────────────────────────────────────
@@ -73,8 +75,11 @@ func makeSource(protocol string) *admodels.RTBSource {
 
 func makeDriver(t *testing.T, src *admodels.RTBSource, cli httpclient.Driver) *driver {
 	t.Helper()
-	d, err := newDriver(context.Background(), src, cli)
+	requester, err := rtbreq.NewHttpRTBRequester(src, cli)
 	require.NoError(t, err)
+	d, err := newDriver(context.Background(), src, requester)
+	require.NoError(t, err)
+	requester.SetSource(d)
 	return d
 }
 
@@ -135,7 +140,7 @@ func rtbBidJSON() io.Reader {
 // ─── newDriver validation ────────────────────────────────────────────────────
 
 func TestNewDriver_NilSource(t *testing.T) {
-	_, err := newDriver(context.Background(), nil, &mockHTTPClient{})
+	_, err := newDriver(context.Background(), nil, &rtbreq.MockRTBRequester{})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrNilSource)
 }
@@ -284,38 +289,6 @@ func TestUndefinedTypeError_Is(t *testing.T) {
 }
 
 // ─── driver.unmarshal – unsupported request type ──────────────────────────────
-
-func TestDriver_Unmarshal_UnsupportedXML(t *testing.T) {
-	src := makeSource("openrtb")
-	src.RequestType = RequestTypeXML
-	d := makeDriver(t, src, &mockHTTPClient{})
-	_, err := d.unmarshal(makeBidRequest(), strings.NewReader(""))
-	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrUnsupportedRequestType)
-}
-
-// ─── driver.fillRequest – headers ────────────────────────────────────────────
-
-func TestDriver_FillRequest_SetsOpenRTBHeader(t *testing.T) {
-	d := makeDriver(t, makeSource("openrtb"), &mockHTTPClient{})
-	req := &mockRequest{}
-	d.fillRequest(makeBidRequest(), req)
-	assert.Equal(t, headerRequestOpenRTBVersion2, req.headers[headerRequestOpenRTBVersion])
-}
-
-func TestDriver_FillRequest_SetsOpenRTBv3Header(t *testing.T) {
-	d := makeDriver(t, makeSource("openrtb3"), &mockHTTPClient{})
-	req := &mockRequest{}
-	d.fillRequest(makeBidRequest(), req)
-	assert.Equal(t, headerRequestOpenRTBVersion3, req.headers[headerRequestOpenRTBVersion])
-}
-
-func TestDriver_FillRequest_ContentType(t *testing.T) {
-	d := makeDriver(t, makeSource("openrtb"), &mockHTTPClient{})
-	req := &mockRequest{}
-	d.fillRequest(makeBidRequest(), req)
-	assert.Equal(t, "application/json", req.headers["Content-Type"])
-}
 
 // ─── driver metadata ─────────────────────────────────────────────────────────
 

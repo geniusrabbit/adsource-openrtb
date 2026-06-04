@@ -15,7 +15,6 @@ package response
 
 import (
 	"context"
-	"fmt"
 	"iter"
 	"sort"
 	"strings"
@@ -312,11 +311,10 @@ func (r *BidResponse) Get(key string) any {
 // newBidReplacer creates a [strings.Replacer] for macro substitution in creative content and URLs.
 func (r *BidResponse) newBidReplacer(bid *openrtb.Bid) *strings.Replacer {
 	return strings.NewReplacer(
-		"${AUCTION_AD_ID}", bid.AdID,
 		"${AUCTION_ID}", r.BidResponse.ID,
 		"${AUCTION_BID_ID}", r.BidResponse.BidID,
+		"${AUCTION_AD_ID}", bid.AdID,
 		"${AUCTION_IMP_ID}", bid.ImpID,
-		"${AUCTION_PRICE}", fmt.Sprintf("%.6f", bid.Price),
 		"${AUCTION_CURRENCY}", "USD",
 	)
 }

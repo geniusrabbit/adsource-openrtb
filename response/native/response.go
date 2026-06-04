@@ -41,14 +41,6 @@ type ResponseBidItem struct {
 	assets     admodels.AdFileAssets
 }
 
-// Assets returns the file assets extracted from the native bid response.
-func (it *ResponseBidItem) Assets() admodels.AdFileAssets { return it.assets }
-
-// MainAsset returns the primary file asset matched against the format configuration.
-func (it *ResponseBidItem) MainAsset() *admodels.AdFileAsset {
-	return common.MainAssetOf(it.Format(), it.assets)
-}
-
 // New creates a ResponseBidItem for a native bid. It decodes the JSON native markup
 // from the OpenRTB Bid, maps asset IDs to content fields, and validates that all
 // required format assets are present in the response.
@@ -117,6 +109,14 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 	}
 
 	return bidItem, nil
+}
+
+// Assets returns the file assets extracted from the native bid response.
+func (it *ResponseBidItem) Assets() admodels.AdFileAssets { return it.assets }
+
+// MainAsset returns the primary file asset matched against the format configuration.
+func (it *ResponseBidItem) MainAsset() *admodels.AdFileAsset {
+	return common.MainAssetOf(it.Format(), it.assets)
 }
 
 // ContentItemString returns the string value of a named content field.

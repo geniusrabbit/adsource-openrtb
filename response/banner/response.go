@@ -125,6 +125,8 @@ func (it *ResponseBidItem) ContentItemString(name string) string {
 // ContentItem returns the ad response data for the given field name.
 func (it *ResponseBidItem) ContentItem(name string) any {
 	switch name {
+	case adtype.ContentItemLink:
+		return it.BannerInfo.LinkURL
 	case adtype.ContentItemIFrameURL:
 		return it.BannerInfo.IframeURL
 	case adtype.ContentItemContent:
