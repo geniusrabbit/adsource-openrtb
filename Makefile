@@ -52,6 +52,12 @@ compile-rules: ## Compile JSON rule files from rules/data/ into Go sources
 	@python3 scripts/compile-rules.py -in rules/data -out rules
 	@gofmt -w ${GO_FMT_FLAGS} $$(go list -f "{{ .Dir }}" ./...); if [ "$${errors}" != "" ]; then echo "$${errors}"; fi
 
+.PHONY: compile-sources
+compile-sources: ## Compile JSON source-info files from sources/data/ into Go sources
+	@echo "Compile sources"
+	@python3 scripts/compile-sources.py -in sources/data -out sources
+	@gofmt -w ${GO_FMT_FLAGS} $$(go list -f "{{ .Dir }}" ./...); if [ "$${errors}" != "" ]; then echo "$${errors}"; fi
+
 .PHONY: generate-code
 generate-code: ## Run codegeneration procedure
 	@echo "Generate code"

@@ -1,0 +1,11 @@
+{
+  "name": "AdXAd",
+  "description": "AdXAd is a programmatic advertising exchange offering display, native, video, and push inventory with OpenRTB support, real-time bidding, and broad international publisher coverage.",
+  "domain": "www.adxad.com",
+  "icon_url": "https://www.adxad.com/favicon.ico",
+  "logo_url": "https://www.adxad.com/images/adxad-logo.svg",
+  "url": "https://www.adxad.com",
+  "dsp_domains": [
+    "dsp.adxad.com"
+  ]
+}

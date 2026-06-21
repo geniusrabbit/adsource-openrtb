@@ -1,0 +1,12 @@
+{
+  "name": "Amazon Ads",
+  "description": "Amazon's advertising platform offering sponsored products, display, video, and programmatic DSP advertising with access to Amazon's first-party shopping and streaming audiences.",
+  "domain": "advertising.amazon.com",
+  "icon_url": "https://advertising.amazon.com/favicon.ico",
+  "logo_url": "https://m.media-amazon.com/images/G/01/advertising/AmazonAdsLogo.svg",
+  "url": "https://advertising.amazon.com",
+  "dsp_domains": [
+    "aax-us-east.amazon-adsystem.com",
+    "aax-eu.amazon-adsystem.com"
+  ]
+}

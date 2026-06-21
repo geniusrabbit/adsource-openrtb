@@ -1,0 +1,11 @@
+{
+  "name": "PopCash",
+  "description": "PopCash is a global popunder advertising network offering high-volume traffic monetization with instant approval, real-time statistics, and targeting options including geo, device, and browser.",
+  "domain": "www.popcash.net",
+  "icon_url": "https://www.popcash.net/favicon.ico",
+  "logo_url": "https://www.popcash.net/images/popcash-logo.png",
+  "url": "https://www.popcash.net",
+  "dsp_domains": [
+    "rtb.popcash.net"
+  ]
+}

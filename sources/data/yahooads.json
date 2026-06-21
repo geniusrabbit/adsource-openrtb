@@ -1,0 +1,11 @@
+{
+  "name": "Yahoo Ads",
+  "description": "Yahoo's demand-side platform (DSP) delivering programmatic display, native, video, and mobile advertising across Yahoo properties and premium publisher inventory worldwide.",
+  "domain": "ads.yahoo.com",
+  "icon_url": "https://s.yimg.com/rz/l/favicon.ico",
+  "logo_url": "https://s.yimg.com/ny/api/res/1.2/pf_AUE2AWUl8jxEjdqE4g--~A/YXBwaWQ9aGlnaGxhbmRlcjt3PTY0MA--/https://s.yimg.com/os/creatr-uploaded-images/2023-11/yahoo-logo.png",
+  "url": "https://ads.yahoo.com",
+  "dsp_domains": [
+    "c2shb.ssp.yahoo.com"
+  ]
+}

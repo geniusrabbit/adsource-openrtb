@@ -1,0 +1,11 @@
+{
+  "name": "TrafficStars",
+  "description": "TrafficStars is a self-serve programmatic ad network specializing in adult and mainstream traffic, offering banner, native, push, video, and popunder formats with full OpenRTB integration.",
+  "domain": "www.trafficstars.com",
+  "icon_url": "https://www.trafficstars.com/favicon.ico",
+  "logo_url": "https://www.trafficstars.com/images/trafficstars-logo.svg",
+  "url": "https://www.trafficstars.com",
+  "dsp_domains": [
+    "*.tsyndicate.com"
+  ]
+}

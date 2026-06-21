@@ -1,0 +1,9 @@
+{
+  "name": "TwinRed",
+  "description": "TwinRed is a programmatic advertising platform focused on adult and mainstream premium inventory, providing display, video, popunder, and native ad formats with OpenRTB/RTB support.",
+  "domain": "www.twinred.com",
+  "icon_url": "https://www.twinred.com/favicon.ico",
+  "logo_url": "https://www.twinred.com/images/twinred-logo.svg",
+  "url": "https://www.twinred.com",
+  "dsp_domains": ["feed.ad.twinrdengine.com"]
+}

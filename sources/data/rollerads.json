@@ -1,0 +1,11 @@
+{
+  "name": "RollerAds",
+  "description": "RollerAds is a push notification and popunder advertising network offering global traffic with self-serve platform, CPC/CPM pricing, and granular targeting by geo, device, OS, and browser.",
+  "domain": "www.rollerads.com",
+  "icon_url": "https://www.rollerads.com/favicon.ico",
+  "logo_url": "https://www.rollerads.com/images/rollerads-logo.svg",
+  "url": "https://www.rollerads.com",
+  "dsp_domains": [
+    "rtb.rollerads.com"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "Meta Ads",
+  "description": "Meta's advertising platform (formerly Facebook Ads) providing access to highly targeted audiences across Facebook, Instagram, Messenger, and the Meta Audience Network.",
+  "domain": "business.facebook.com",
+  "icon_url": "https://www.facebook.com/favicon.ico",
+  "logo_url": "https://www.facebook.com/images/fb_icon_325x325.png",
+  "url": "https://www.facebook.com/business/ads",
+  "dsp_domains": [
+    "an.facebook.com"
+  ]
+}

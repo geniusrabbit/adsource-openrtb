@@ -1,0 +1,12 @@
+{
+  "name": "PropellerAds",
+  "description": "PropellerAds is a large self-serve advertising network specializing in push notifications, popunders, native, and interstitial formats with global reach and performance-focused optimization.",
+  "domain": "www.propellerads.com",
+  "icon_url": "https://www.propellerads.com/favicon.ico",
+  "logo_url": "https://www.propellerads.com/images/propellerads-logo.svg",
+  "url": "https://www.propellerads.com",
+  "dsp_domains": [
+    "rtb-us.propellerads.com",
+    "rtb-eu.propellerads.com"
+  ]
+}

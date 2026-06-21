@@ -1,0 +1,11 @@
+{
+  "name": "MyAdCash",
+  "description": "MyAdCash is a global self-serve advertising network offering popunder, push notification, native, and interstitial formats with real-time bidding, advanced targeting, and worldwide publisher reach.",
+  "domain": "www.myadcash.com",
+  "icon_url": "https://www.myadcash.com/favicon.ico",
+  "logo_url": "https://www.myadcash.com/images/myadcash-logo.svg",
+  "url": "https://www.myadcash.com",
+  "dsp_domains": [
+    "rtb.myadcash.com"
+  ]
+}

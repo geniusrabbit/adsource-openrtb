@@ -1,0 +1,12 @@
+{
+  "name": "Google Ads",
+  "description": "Google's online advertising platform and the largest digital advertising network, offering search, display, video, and programmatic inventory across Google properties and the GDN.",
+  "domain": "ads.google.com",
+  "icon_url": "https://www.google.com/favicon.ico",
+  "logo_url": "https://www.gstatic.com/images/branding/googlelogo/svg/googlelogo_clr_74x24px.svg",
+  "url": "https://ads.google.com",
+  "dsp_domains": [
+    "cm.g.doubleclick.net",
+    "googleads.g.doubleclick.net"
+  ]
+}

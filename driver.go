@@ -71,6 +71,7 @@ import (
 	"github.com/geniusrabbit/adcorelib/openlatency/prometheuswrapper"
 
 	"github.com/geniusrabbit/adsource-openrtb/response/requester"
+	"github.com/geniusrabbit/adsource-openrtb/sources"
 )
 
 const (
@@ -90,7 +91,8 @@ type driver struct {
 	latencyMetrics *prometheuswrapper.Wrapper
 
 	// Original source model
-	source *admodels.RTBSource
+	source     *admodels.RTBSource
+	sourceInfo *adtype.SourceInfo
 
 	// RTB source requester (performs actual HTTP call)
 	rtbRequester RTBRequester
@@ -104,9 +106,20 @@ func newDriver(_ context.Context, source *admodels.RTBSource, rtbRequester RTBRe
 		return nil, ErrNilHTTPClient
 	}
 	source.MinimalWeight = max(source.MinimalWeight, defaultMinWeight)
+	sourceInfo := sources.Sources.SourceInfoByDSPDomain(source.Domain())
+	if sourceInfo != nil {
+		sourceInfo.ID = gocast.Str(source.ID)
+		sourceInfo.Protocol = source.Protocol
+	} else {
+		sourceInfo = &adtype.SourceInfo{
+			ID:       gocast.Str(source.ID),
+			Protocol: source.Protocol,
+		}
+	}
 	return &driver{
 		source:       source,
 		rtbRequester: rtbRequester,
+		sourceInfo:   sourceInfo,
 		latencyMetrics: prometheuswrapper.NewWrapperDefault("adsource_",
 			[]string{"id", "protocol", "driver"},
 			[]string{gocast.Str(source.ID), source.Protocol, "openrtb"},
@@ -125,10 +138,7 @@ func (d *driver) Protocol() string { return d.source.Protocol }
 
 // Info returns information about the source platform and the source protocol
 func (d *driver) Info() *adtype.SourceInfo {
-	return &adtype.SourceInfo{
-		ID:       gocast.Str(d.source.ID),
-		Protocol: d.source.Protocol,
-	}
+	return d.sourceInfo
 }
 
 // AccountID of source
@@ -182,7 +192,7 @@ func (d *driver) RequestStrategy() adtype.RequestStrategy {
 }
 
 // Bid request for standart system filter
-func (d *driver) Bid(request adtype.BidRequester) (response adtype.Response) {
+func (d *driver) Bid(request adtype.BidRequester) adtype.Response {
 	beginTime := fasttime.UnixTimestampNano()
 	d.rpsCurrent.Inc(1)
 	d.latencyMetrics.BeginQuery()

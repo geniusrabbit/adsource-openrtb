@@ -1,0 +1,11 @@
+{
+  "name": "Taboola",
+  "description": "Taboola is a leading native and content discovery advertising platform, powering recommendations across a global network of premium publishers with display, video, and sponsored content formats.",
+  "domain": "www.taboola.com",
+  "icon_url": "https://www.taboola.com/favicon.ico",
+  "logo_url": "https://www.taboola.com/images/taboola-logo.png",
+  "url": "https://www.taboola.com",
+  "dsp_domains": [
+    "rtb.taboola.com"
+  ]
+}

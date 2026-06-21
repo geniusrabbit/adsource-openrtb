@@ -1,0 +1,11 @@
+{
+  "name": "Adsterra",
+  "description": "Adsterra is a performance-driven advertising network offering popunder, native, display banner, push, and video formats with broad global coverage and anti-fraud protection.",
+  "domain": "www.adsterra.com",
+  "icon_url": "https://www.adsterra.com/favicon.ico",
+  "logo_url": "https://www.adsterra.com/images/adsterra-logo.svg",
+  "url": "https://www.adsterra.com",
+  "dsp_domains": [
+    "dsp.adsterra.com"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "Ad-Maven",
+  "description": "Ad-Maven is a global ad network and SSP specializing in popunder, push notification, banner, and interstitial formats, serving billions of impressions monthly with OpenRTB programmatic buying support.",
+  "domain": "www.ad-maven.com",
+  "icon_url": "https://www.ad-maven.com/favicon.ico",
+  "logo_url": "https://www.ad-maven.com/images/ad-maven-logo.svg",
+  "url": "https://www.ad-maven.com",
+  "dsp_domains": [
+    "rtb.ad-maven.com"
+  ]
+}

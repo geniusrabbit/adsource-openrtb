@@ -1,0 +1,11 @@
+{
+  "name": "Clickaine",
+  "description": "Clickaine is a self-serve pop and push advertising network providing high-volume popunder and push notification traffic with real-time bidding, geo targeting, and performance optimization tools.",
+  "domain": "www.clickaine.com",
+  "icon_url": "https://www.clickaine.com/favicon.ico",
+  "logo_url": "https://www.clickaine.com/images/clickaine-logo.svg",
+  "url": "https://www.clickaine.com",
+  "dsp_domains": [
+    "rtb.clickaine.com"
+  ]
+}

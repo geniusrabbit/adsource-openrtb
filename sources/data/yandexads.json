@@ -1,0 +1,11 @@
+{
+  "name": "Yandex Ads",
+  "description": "Yandex's advertising network and DSP offering contextual, display, video, and programmatic inventory across Yandex services and the Yandex Advertising Network (YAN) of partner sites.",
+  "domain": "ads.yandex.com",
+  "icon_url": "https://yandex.com/favicon.ico",
+  "logo_url": "https://yastatic.net/s3/home-static/_/5x/Y_fa_W_YtdpCkzCHQ7ZoqFgS1Eo.png",
+  "url": "https://ads.yandex.com",
+  "dsp_domains": [
+    "bs.yandex.ru"
+  ]
+}

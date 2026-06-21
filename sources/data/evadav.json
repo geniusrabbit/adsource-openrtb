@@ -1,0 +1,11 @@
+{
+  "name": "EvaDav",
+  "description": "EvaDav is a performance advertising network specializing in push notifications, native ads, and popunders with global reach, real-time bidding, and advanced audience targeting capabilities.",
+  "domain": "evadav.com",
+  "icon_url": "https://evadav.com/favicon.ico",
+  "logo_url": "https://evadav.com/images/evadav-logo.svg",
+  "url": "https://evadav.com",
+  "dsp_domains": [
+    "rtb.evadav.com"
+  ]
+}

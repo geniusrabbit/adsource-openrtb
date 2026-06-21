@@ -1,0 +1,11 @@
+{
+  "name": "Kadam",
+  "description": "Kadam is a CPC/CPM advertising network offering native ads, push notifications, banners, and teasers with advanced targeting including interests, geo, device, and retargeting across a broad publisher network.",
+  "domain": "www.kadam.net",
+  "icon_url": "https://www.kadam.net/favicon.ico",
+  "logo_url": "https://www.kadam.net/images/kadam-logo.svg",
+  "url": "https://www.kadam.net",
+  "dsp_domains": [
+    "rtb.kadam.net"
+  ]
+}

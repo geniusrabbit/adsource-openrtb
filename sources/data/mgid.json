@@ -1,0 +1,11 @@
+{
+  "name": "MGID",
+  "description": "MGID is a global native advertising platform delivering sponsored content, display, and video ads across a network of premium publishers with strong reach in North America, Europe, and Asia.",
+  "domain": "www.mgid.com",
+  "icon_url": "https://www.mgid.com/favicon.ico",
+  "logo_url": "https://www.mgid.com/images/mgid-logo.svg",
+  "url": "https://www.mgid.com",
+  "dsp_domains": [
+    "rtb.mgid.com"
+  ]
+}

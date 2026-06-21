@@ -1,0 +1,11 @@
+{
+  "name": "ExoClick",
+  "description": "ExoClick is a leading programmatic advertising platform and ad network for mainstream and adult publishers, offering banner, video, native, push, and popunder formats with OpenRTB support.",
+  "domain": "www.exoclick.com",
+  "icon_url": "https://www.exoclick.com/favicon.ico",
+  "logo_url": "https://www.exoclick.com/images/exoclick-logo.svg",
+  "url": "https://www.exoclick.com",
+  "dsp_domains": [
+    "syndication.exoclick.com"
+  ]
+}
