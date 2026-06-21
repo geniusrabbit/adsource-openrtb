@@ -120,7 +120,7 @@ func (s *SimulationRTBRequester) Request(request adtype.BidRequester, _ uint64) 
 		Req:         request,
 		BidResponse: *res,
 	}
-	bidResp.Prepare()
+	bidResp.Prepare(nil)
 	return bidResp, nil
 }
 

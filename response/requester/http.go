@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/bsm/openrtb"
+	"github.com/demdxx/gocast/v2"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -26,9 +27,11 @@ import (
 	"github.com/geniusrabbit/adcorelib/openlatency/prometheuswrapper"
 
 	requestoptions "github.com/geniusrabbit/adsource-openrtb/request/options"
+	"github.com/geniusrabbit/adsource-openrtb/request/rtbrules"
 	requestv2 "github.com/geniusrabbit/adsource-openrtb/request/v2"
 	requestv3 "github.com/geniusrabbit/adsource-openrtb/request/v3"
 	response "github.com/geniusrabbit/adsource-openrtb/response"
+	"github.com/geniusrabbit/adsource-openrtb/rules"
 )
 
 const (
@@ -53,6 +56,7 @@ type HttpRTBRequester struct {
 
 	// Request builder (v2 or v3 depending on source.Protocol)
 	builder requestoptions.RequestBuilder
+	rules   rtbrules.RTBRuler
 
 	// Metrics and error tracking
 	latencyMetrics *prometheuswrapper.Wrapper
@@ -78,11 +82,27 @@ func NewHttpRTBRequester(source *admodels.RTBSource, netClient httpclient.Driver
 		return source.Filter.TestFormat(format)
 	}
 
-	var builder requestoptions.RequestBuilder
+	var (
+		builder  requestoptions.RequestBuilder
+		rulesObj *rtbrules.RTBRules
+		// ruler is the interface-typed handle for the builder constructors.
+		// We must not assign rulesObj directly when it is nil: a (*RTBRules)(nil)
+		// assigned to an RTBRuler interface produces a non-nil interface value,
+		// which defeats the "if rules != nil" guards inside the builders.
+		ruler rtbrules.RTBRuler
+	)
+
+	if source.Config.Rules != "" {
+		if rulesObj = rules.Rules[source.Config.Rules]; rulesObj == nil {
+			return nil, fmt.Errorf("source[%s]: %d: rules %s not found", source.Protocol, source.ID, source.Config.Rules)
+		}
+		ruler = rulesObj // only assign to the interface when concrete value is non-nil
+	}
+
 	if source.Protocol == "openrtb3" {
-		builder = requestv3.New(formatChecker)
+		builder = requestv3.New(formatChecker, ruler)
 	} else {
-		builder = requestv2.New(formatChecker)
+		builder = requestv2.New(formatChecker, ruler)
 	}
 
 	return &HttpRTBRequester{
@@ -90,9 +110,10 @@ func NewHttpRTBRequester(source *admodels.RTBSource, netClient httpclient.Driver
 		headers:   source.Headers.DataOr(nil),
 		netClient: netClient,
 		builder:   builder,
+		rules:     ruler,
 		latencyMetrics: prometheuswrapper.NewWrapperDefault("adsource_",
 			[]string{"id", "protocol", "driver"},
-			[]string{fmt.Sprintf("%d", source.ID), source.Protocol, "openrtb"},
+			[]string{gocast.Str(source.ID), source.Protocol, "openrtb"},
 		),
 	}, nil
 }
@@ -104,8 +125,11 @@ func (r *HttpRTBRequester) SetSource(src adtype.Source) {
 }
 
 // Request sends the bid request to the RTB source and returns the response.
-func (r *HttpRTBRequester) Request(request adtype.BidRequester, beginTime uint64) (resp adtype.Response, err error) {
-	httpRequest, err := r.buildRequest(request)
+func (r *HttpRTBRequester) Request(request adtype.BidRequester, beginTime uint64) (adtype.Response, error) {
+	var (
+		resp             adtype.Response
+		httpRequest, err = r.buildRequest(request)
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +294,7 @@ func (r *HttpRTBRequester) unmarshal(request adtype.BidRequester, body io.Reader
 		BidResponse: bidResp,
 	}
 
-	bidResponse.Prepare()
+	bidResponse.Prepare(r.rules)
 	return bidResponse, nil
 }
 

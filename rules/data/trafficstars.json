@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "title": "TrafficStars",
+    "description": "RTB rules for TrafficStars ad network",
+    "version": "1.0.0",
+    "modified_at": "2026-06-20T00:00:00Z",
+    "docs": [
+      {
+        "title": "TrafficStars RTB Documentation",
+        "link": "https://rtb-docs.trafficstars.com/"
+      }
+    ]
+  },
+  "formats": [
+    "direct",
+    "native",
+    "video",
+    "banner_300x250",
+    "banner_300x100",
+    "banner_315x300",
+    "banner_900x250",
+    "banner_728x90",
+    "banner_250x150",
+    "banner_305x99",
+    "proxy",
+    "proxy_300x250",
+    "proxy_300x100",
+    "proxy_315x300",
+    "proxy_900x250",
+    "proxy_728x90",
+    "proxy_250x150",
+    "proxy_305x99"
+  ],
+  "interstitial_formats": ["proxy"],
+  "push_formats": ["native"],
+  "rules": [
+    {
+      "condition": {
+        "formats": ["native"],
+        "interstitial": "exclude",
+        "push": "include"
+      },
+      "config": {
+        "ext": { "type": "webpush" },
+        "no_request_object": true
+      },
+      "map_response": {
+        "assets": [
+          { "id": 0, "name": "id", "field": "id" },
+          { "id": 1, "name": "main", "field": "image" },
+          { "id": 2, "name": "logo", "field": "icon" },
+          { "id": 101, "name": "title", "field": "title" },
+          { "id": 102, "name": "description", "field": "content" },
+          { "id": 105, "name": "url", "field": "url" }
+        ]
+      }
+    },
+    {
+      "condition": {
+        "formats": ["direct"],
+        "interstitial": "exclude",
+        "push": "exclude"
+      },
+      "config": { "ext": { "type": "pop" } }
+    }
+  ]
+}

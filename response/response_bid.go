@@ -27,6 +27,7 @@ import (
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/context/ctxlogger"
 
+	"github.com/geniusrabbit/adsource-openrtb/request/rtbrules"
 	"github.com/geniusrabbit/adsource-openrtb/response/banner"
 	"github.com/geniusrabbit/adsource-openrtb/response/direct"
 	"github.com/geniusrabbit/adsource-openrtb/response/native"
@@ -72,7 +73,7 @@ func (r *BidResponse) Source() adtype.Source {
 // Prepare processes the bid response to make it ready for use in ad serving.
 // This includes processing bid markup and URLs, replacing macros in creative content,
 // extracting optimal bids, and creating standardised ad objects.
-func (r *BidResponse) Prepare() {
+func (r *BidResponse) Prepare(rules rtbrules.RTBRuler) {
 	r.bidRespBidCount = 0
 
 	for i, seat := range r.BidResponse.SeatBid {
@@ -100,7 +101,7 @@ func (r *BidResponse) Prepare() {
 		imp := xtypes.Slice[*adtype.Impression](r.Req.Impressions()).FirstOr(nil,
 			func(imp **adtype.Impression) bool { return strings.HasPrefix(bid.ImpID, (*imp).ID) })
 		if imp != nil {
-			if bidItem := r.prepareBidItem(bid, imp); bidItem != nil {
+			if bidItem := r.prepareBidItem(bid, imp, rules); bidItem != nil {
 				r.ads = append(r.ads, bidItem)
 			}
 		}
@@ -110,8 +111,9 @@ func (r *BidResponse) Prepare() {
 // prepareBidItem creates a standardised ResponseBidItem from an OpenRTB bid and impression.
 // It delegates to the appropriate format-specific constructor and returns nil when the
 // format cannot be determined or the constructor returns an error.
-func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) adtype.ResponseItemCommon {
+func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression, rules rtbrules.RTBRuler) adtype.ResponseItemCommon {
 	var (
+		ctx     = r.Context()
 		format  *types.Format
 		bidItem adtype.ResponseItemCommon
 		err     error
@@ -121,22 +123,19 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 		format = imp.FormatByType(types.FormatDirectType)
 	} else {
 		for _, formatObj := range imp.Formats() {
-			if bid.ImpID != imp.IDByFormat(formatObj) {
-				continue
+			if bid.ImpID == imp.IDByFormat(formatObj) {
+				format = formatObj
+				break
 			}
-			format = formatObj
-			break
 		}
 	}
 
-	if format == nil {
-		return nil
-	}
-
 	switch {
+	case format == nil:
+		return nil
 	case format.IsDirect():
 		if bidItem, err = direct.New(r.Req, r.Src, bid, imp, format); err != nil {
-			ctxlogger.Get(r.Context()).Debug(
+			ctxlogger.Get(ctx).Debug(
 				"Failed to create direct bid item",
 				zap.String("markup", bid.AdMarkup),
 				zap.Error(err),
@@ -144,8 +143,8 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 			return nil
 		}
 	case format.IsNative():
-		if bidItem, err = native.New(r.Req, r.Src, bid, imp, format); err != nil {
-			ctxlogger.Get(r.Context()).Debug(
+		if bidItem, err = native.New(r.Req, r.Src, bid, imp, format, rules); err != nil {
+			ctxlogger.Get(ctx).Debug(
 				"Failed to decode native markup",
 				zap.String("markup", bid.AdMarkup),
 				zap.Error(err),
@@ -154,7 +153,7 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 		}
 	case format.IsBanner() || format.IsProxy():
 		if bidItem, err = banner.New(r.Req, r.Src, bid, imp, format); err != nil {
-			ctxlogger.Get(r.Context()).Debug(
+			ctxlogger.Get(ctx).Debug(
 				"Failed to decode banner markup",
 				zap.String("markup", bid.AdMarkup),
 				zap.Error(err),
@@ -163,7 +162,7 @@ func (r *BidResponse) prepareBidItem(bid *openrtb.Bid, imp *adtype.Impression) a
 		}
 	case format.IsVideo():
 		if bidItem, err = vastp.New(r.Req, r.Src, bid, imp, format); err != nil {
-			ctxlogger.Get(r.Context()).Debug(
+			ctxlogger.Get(ctx).Debug(
 				"Failed to decode video markup",
 				zap.String("markup", bid.AdMarkup),
 				zap.Error(err),

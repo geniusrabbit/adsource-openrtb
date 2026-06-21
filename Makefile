@@ -1,6 +1,9 @@
 export GOPRIVATE=bitbucket.org/geniusrabbit/*
 
-APP_TAGS := "nats"
+APP_TAGS    := "nats"
+BENCH_PKG   ?= ./...
+BENCH_TIME  ?= 3s
+BENCH_COUNT ?= 1
 
 .PHONY: all
 all: lint cover
@@ -37,6 +40,17 @@ cover:
 	@echo
 	@echo Open the coverage report:
 	@echo open $(TMP_ETC)/coverage.html
+
+.PHONY: bench
+bench: ## Run benchmarks (BENCH_PKG=./..., BENCH_TIME=3s, BENCH_COUNT=1)
+	go test -tags ${APP_TAGS} -run='^$$' -bench=. -benchmem \
+		-benchtime=${BENCH_TIME} -count=${BENCH_COUNT} ${BENCH_PKG}
+
+.PHONY: compile-rules
+compile-rules: ## Compile JSON rule files from rules/data/ into Go sources
+	@echo "Compile rules"
+	@python3 scripts/compile-rules.py -in rules/data -out rules
+	@gofmt -w ${GO_FMT_FLAGS} $$(go list -f "{{ .Dir }}" ./...); if [ "$${errors}" != "" ]; then echo "$${errors}"; fi
 
 .PHONY: generate-code
 generate-code: ## Run codegeneration procedure

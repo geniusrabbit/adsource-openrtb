@@ -9,6 +9,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"mime"
+	"path/filepath"
 
 	"github.com/bsm/openrtb/native/request"
 	"github.com/bsm/openrtb/native/response"
@@ -24,25 +26,22 @@ import (
 // It handles two common wire formats:
 //  1. A top-level wrapper object: {"native": {...}}
 //  2. The native response object directly: {"link": ..., "assets": [...]}
-func decodeNativeMarkup(data []byte) (*response.Response, error) {
+func decodeNativeMarkup(nativeResp *response.Response, data []byte) (err error) {
 	var (
-		native struct {
-			Native response.Response `json:"native"`
+		native = struct {
+			Native *response.Response `json:"native"`
+		}{
+			Native: nativeResp,
 		}
-		err error
 	)
 	if bytes.Contains(data, []byte(`"native"`)) {
-		err = json.Unmarshal(data, &native)
+		if err = json.Unmarshal(data, &native); err != nil {
+			err = json.Unmarshal(data, native.Native)
+		}
 	} else {
-		err = json.Unmarshal(data, &native.Native)
+		err = json.Unmarshal(data, native.Native)
 	}
-	if err != nil {
-		err = json.Unmarshal(data, &native.Native)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &native.Native, nil
+	return err
 }
 
 // openrtbNativeLabelNameByType maps an OpenRTB Native data asset type ID to its
@@ -170,4 +169,11 @@ func validateRequiredAssets(format *types.Format, native *natresp.Response) erro
 		}
 	}
 	return nil
+}
+
+// extractContentTypeFromFileName returns the MIME content type based on the file extension of the given filename.
+// It uses the standard library's mime.TypeByExtension function to determine the content type.
+// If the extension is not recognized, it returns an empty string.
+func extractContentTypeFromFileName(filename string) string {
+	return mime.TypeByExtension(filepath.Ext(filename))
 }

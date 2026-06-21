@@ -5,12 +5,13 @@ import (
 
 	openrtbnreq "github.com/bsm/openrtb/native/request"
 	"github.com/bsm/openrtb/v3"
-	"github.com/geniusrabbit/udetect"
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adtype"
+	"github.com/geniusrabbit/udetect"
 
 	requestoptions "github.com/geniusrabbit/adsource-openrtb/request/options"
+	"github.com/geniusrabbit/adsource-openrtb/request/rtbrules"
 )
 
 type formatChecker func(format *types.Format, intr bool) bool
@@ -18,14 +19,35 @@ type formatChecker func(format *types.Format, intr bool) bool
 // Builder constructs OpenRTB v3 bid requests.
 type Builder struct {
 	checker formatChecker
+	rules   rtbrules.RTBRuler
 }
 
 // New returns a new Builder.
-func New(checker formatChecker) *Builder { return &Builder{checker: checker} }
+func New(checker formatChecker, rules rtbrules.RTBRuler) *Builder {
+	return &Builder{checker: checker, rules: rules}
+}
 
 // Build constructs an OpenRTB v3 bid request and returns it as requestoptions.RTBRequest.
 func (b *Builder) Build(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (requestoptions.RTBRequest, error) {
 	return b.requestToRTBv3(req, opts...)
+}
+
+func (b *Builder) isAcceptableFormat(format *types.Format, imp *adtype.Impression) bool {
+	if b.checker != nil && !b.checker(format, imp.IsInterstitial()) {
+		return false
+	}
+	if b.rules != nil {
+		if imp.IsPush() && !b.rules.IsPushSupport(format) {
+			return false
+		}
+		if imp.IsInterstitial() && !b.rules.IsInterstitialSupport(format) {
+			return false
+		}
+		if !b.rules.IsFormatSupport(format) {
+			return false
+		}
+	}
+	return true
 }
 
 func (b *Builder) requestToRTBv3(req adtype.BidRequester, opts ...requestoptions.BidRequestRTBOption) (*openrtb.BidRequest, error) {
@@ -59,8 +81,8 @@ func (b *Builder) requestToRTBv3(req adtype.BidRequester, opts ...requestoptions
 func (b *Builder) openrtbV3Impressions(req adtype.BidRequester, opts *requestoptions.BidRequestRTBOptions) (list []openrtb.Impression) {
 	for _, imp := range req.Impressions() {
 		for _, format := range imp.Formats() {
-			if b.checker == nil || b.checker(format, imp.IsInterstitial()) {
-				if openRTBImp := openrtbV3ImpressionByFormat(req, imp, format, opts); openRTBImp != nil {
+			if b.isAcceptableFormat(format, imp) {
+				if openRTBImp := b.openrtbV3ImpressionByFormat(req, imp, format, opts); openRTBImp != nil {
 					list = append(list, *openRTBImp)
 				}
 			}
@@ -69,7 +91,7 @@ func (b *Builder) openrtbV3Impressions(req adtype.BidRequester, opts *requestopt
 	return list
 }
 
-func openrtbV3ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression, format *types.Format, opts *requestoptions.BidRequestRTBOptions) *openrtb.Impression {
+func (b *Builder) openrtbV3ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression, format *types.Format, opts *requestoptions.BidRequestRTBOptions) *openrtb.Impression {
 	var (
 		banner *openrtb.Banner
 		video  *openrtb.Video
@@ -77,94 +99,34 @@ func openrtbV3ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression
 		ext    json.RawMessage
 	)
 
-	switch {
-	case format.IsBanner() || format.IsProxy():
-		w, h := imp.Width, imp.Height
-		wm, wh := imp.WidthMax, imp.HeightMax
-		if w < 1 && h < 1 {
-			w, h = format.Width, format.Height
-		}
-		if !format.IsStretch() {
-			wm, wh = 0, 0
-		}
-		var btype []openrtb.BannerType
-		if !imp.IsInterstitial() {
-			if format.IsProxy() {
-				// Blocked creative types for proxy formats (1 = XHTML Text Ad, 2 = XHTML Banner Ad)
-				btype = []openrtb.BannerType{openrtb.BannerTypeXHTMLText, openrtb.BannerTypeXHTML}
-			} else {
-				// Blocked creative types for regular banner formats (3 = JavaScript Ad, 4 = Iframe Ad)
-				btype = []openrtb.BannerType{openrtb.BannerTypeJS, openrtb.BannerTypeFrame}
+	if b.rules == nil || !b.rules.NoRequestObject(format, imp.IsInterstitial(), imp.IsPush()) {
+		switch {
+		case format.IsBanner() || format.IsProxy():
+			banner = openrtbV3Banner(imp, format)
+		case format.IsNative():
+			native = &openrtb.Native{
+				Request:      openrtbV3NativeRequest(req, imp, format, opts),
+				Version:      opts.OpenNativeVer(),
+				APIs:         nil,
+				BlockedAttrs: nil,
+				Ext:          nil,
 			}
-		} else {
-			w, h, wm, wh = max(w, wm), max(h, wh), 0, 0
-			//  BANNER = 1;
-			//  POPUNDER = 4;
-			//  INTERSTITIAL = 5;
-			//  PREROLL = 6;
-			//  TAB = 7;
-			ext = json.RawMessage(`{"type":"interstitial","format":5}`)
+		case format.IsDirect():
+		case format.IsVideo():
+			video = openrtbV3Video(imp, format)
+		default:
+			return nil
 		}
-		banner = &openrtb.Banner{
-			ID:           "",
-			Width:        max(w, 5),
-			Height:       max(h, 5),
-			WidthMax:     wm,
-			HeightMax:    wh,
-			WidthMin:     0,
-			HeightMin:    0,
-			Position:     openrtb.AdPosition(imp.Pos),
-			BlockedTypes: btype,
-			BlockedAttrs: nil,
-			MIMEs:        nil,
-			TopFrame:     0,
-			ExpDirs:      nil,
-			APIs:         nil,
-			Ext:          nil,
-		}
-	case format.IsNative():
-		native = &openrtb.Native{
-			Request:      openrtbV3NativeRequest(req, imp, format, opts),
-			Version:      opts.OpenNativeVer(),
-			APIs:         nil,
-			BlockedAttrs: nil,
-			Ext:          nil,
-		}
-	case format.IsDirect():
-		if imp.Interstitial == 0 {
-			ext = json.RawMessage(`{"type":"pop"}`)
-		}
-	case format.IsVideo():
-		video = &openrtb.Video{
-			MIMEs:         []string{"video/mp4", "video/webm"},
-			MinDuration:   0,
-			MaxDuration:   0,
-			Protocols:     nil,
-			Width:         imp.Width,
-			Height:        imp.Height,
-			Position:      openrtb.AdPosition(imp.Pos),
-			StartDelay:    0,
-			Linearity:     0,
-			Skip:          1,
-			SkipMin:       0,
-			SkipAfter:     3,
-			BlockedAttrs:  nil,
-			BoxingAllowed: &[]int{1}[0],
-			MaxExtended:   0,
-			Ext:           nil,
-		}
-	default:
-		return nil
 	}
 
-	return &openrtb.Impression{
+	impObj := &openrtb.Impression{
 		ID:                    imp.IDByFormat(format),
 		Banner:                banner,
 		Video:                 video,
 		Native:                native,
 		DisplayManager:        "",                                            // Name of ad mediation partner, SDK technology, etc
 		DisplayManagerVersion: "",                                            // Version of the above
-		Interstitial:          imp.Interstitial,                              // Interstitial, Default: 0 ("1": Interstitial, "0": Something else)
+		Interstitial:          b2i(imp.IsInterstitial()),                     // Interstitial, Default: 0 ("1": Interstitial, "0": Something else)
 		TagID:                 imp.Target.Codename(),                         // IDentifier for specific ad placement or ad tag
 		BidFloor:              max(imp.BidFloorCPM.Float64(), opts.BidFloor), // Bid floor for this impression in CPM
 		BidFloorCurrency:      "",                                            // Currency of bid floor
@@ -172,6 +134,75 @@ func openrtbV3ImpressionByFormat(req adtype.BidRequester, imp *adtype.Impression
 		IFrameBusters:         nil,                                           // Array of names for supported iframe busters.
 		PMP:                   nil,                                           // A reference to the PMP object containing any Deals eligible for the impression object.
 		Ext:                   ext,
+	}
+
+	if b.rules != nil {
+		if err := b.rules.AdjustImpression((*ImpressionWrapper)(impObj), imp, format); err != nil {
+			return nil
+		}
+	}
+
+	return impObj
+}
+
+func openrtbV3Banner(imp *adtype.Impression, format *types.Format) *openrtb.Banner {
+	w, h := imp.Width, imp.Height
+	wm, wh := imp.WidthMax, imp.HeightMax
+	if w < 1 && h < 1 {
+		w, h = format.Width, format.Height
+	}
+	if !format.IsStretch() {
+		wm, wh = 0, 0
+	}
+	var btype []openrtb.BannerType
+	if !imp.IsInterstitial() {
+		if format.IsProxy() {
+			// Blocked creative types for proxy formats (1 = XHTML Text Ad, 2 = XHTML Banner Ad)
+			btype = []openrtb.BannerType{openrtb.BannerTypeXHTMLText, openrtb.BannerTypeXHTML}
+		} else {
+			// Blocked creative types for regular banner formats (3 = JavaScript Ad, 4 = Iframe Ad)
+			btype = []openrtb.BannerType{openrtb.BannerTypeJS, openrtb.BannerTypeFrame}
+		}
+	} else {
+		w, h, wm, wh = max(w, wm), max(h, wh), 0, 0
+	}
+	return &openrtb.Banner{
+		ID:           "",
+		Width:        max(w, 5),
+		Height:       max(h, 5),
+		WidthMax:     wm,
+		HeightMax:    wh,
+		WidthMin:     0,
+		HeightMin:    0,
+		Position:     openrtb.AdPosition(imp.Pos),
+		BlockedTypes: btype,
+		BlockedAttrs: nil,
+		MIMEs:        nil,
+		TopFrame:     0,
+		ExpDirs:      nil,
+		APIs:         nil,
+		Ext:          nil,
+	}
+}
+
+func openrtbV3Video(imp *adtype.Impression, _ *types.Format) *openrtb.Video {
+	return &openrtb.Video{
+		MIMEs:         []string{"video/mp4", "video/webm"},
+		MinDuration:   0,
+		MaxDuration:   0,
+		Protocols:     nil,
+		Width:         imp.Width,
+		Height:        imp.Height,
+		Position:      openrtb.AdPosition(imp.Pos),
+		StartDelay:    0,
+		Linearity:     0,
+		Skip:          1,
+		SkipMin:       0,
+		SkipAfter:     3,
+		BlockedAttrs:  nil,
+		BoxingAllowed: &[]int{1}[0],
+		MaxExtended:   0,
+		Ext:           nil,
 	}
 }
 
@@ -195,7 +226,7 @@ func openrtbV3NativeRequest(req adtype.BidRequester, imp *adtype.Impression, for
 	return json.RawMessage(nativePrepared)
 }
 
-func openrtbV3NativeAssets(req adtype.BidRequester, imp *adtype.Impression, format *types.Format) []openrtbnreq.Asset {
+func openrtbV3NativeAssets(_ adtype.BidRequester, _ *adtype.Impression, format *types.Format) []openrtbnreq.Asset {
 	assets := make([]openrtbnreq.Asset, 0, len(format.Config.Assets)+len(format.Config.Fields))
 	for _, asset := range format.Config.Assets {
 		if !asset.IsVideoSupport() || asset.IsImageSupport() {

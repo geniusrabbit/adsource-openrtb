@@ -9,6 +9,7 @@
 package native
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/bsm/openrtb"
@@ -21,6 +22,7 @@ import (
 	"github.com/geniusrabbit/adcorelib/billing"
 	"github.com/geniusrabbit/adcorelib/price"
 
+	"github.com/geniusrabbit/adsource-openrtb/request/rtbrules"
 	"github.com/geniusrabbit/adsource-openrtb/response/common"
 )
 
@@ -44,16 +46,7 @@ type ResponseBidItem struct {
 // New creates a ResponseBidItem for a native bid. It decodes the JSON native markup
 // from the OpenRTB Bid, maps asset IDs to content fields, and validates that all
 // required format assets are present in the response.
-func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adtype.Impression, format *types.Format) (*ResponseBidItem, error) {
-	native, err := decodeNativeMarkup([]byte(bid.AdMarkup))
-	if err != nil {
-		return nil, err
-	}
-
-	if err := validateRequiredAssets(format, native); err != nil {
-		return nil, err
-	}
-
+func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adtype.Impression, format *types.Format, rules rtbrules.RTBRuler) (*ResponseBidItem, error) {
 	cpmPrice := billing.MoneyFloat(bid.Price)
 	bidItem := &ResponseBidItem{
 		BaseBidItem: common.BaseBidItem{
@@ -71,17 +64,51 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 				ECPM:           cpmPrice,
 			},
 		},
-		Native:     native,
-		ActionLink: native.Link.URL,
-		Data:       extractNativeDataFromImpression(imp, native),
+		Native:     &natresp.Response{},
+		ActionLink: "",
+		Data:       nil,
 	}
+
+	// Apply mapping rules if provided. If no rules are applied, decode the native markup directly.
+	appliedMappers := false
+	if rules != nil && rules.HasMappingRules() {
+		var data map[string]any
+		if err := json.Unmarshal([]byte(bid.AdMarkup), &data); err != nil {
+			return nil, err
+		}
+		err := rules.ApplyRules(format, imp.IsInterstitial(), imp.IsPush(),
+			func(rule *rtbrules.RuleItem) error {
+				if rule != nil && rule.MapResponse.HasAssets() {
+					appliedMappers = true
+					return rule.MapResponse.Mapping(data, bidItem.SetContentItem)
+				}
+				return nil
+			})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// If no mapping rules were applied, decode the native markup directly from the bid.AdMarkup.
+	if !appliedMappers {
+		if err := decodeNativeMarkup(bidItem.Native, []byte(bid.AdMarkup)); err != nil {
+			return nil, err
+		}
+		if err := validateRequiredAssets(format, bidItem.Native); err != nil {
+			return nil, err
+		}
+		bidItem.Data = extractNativeDataFromImpression(imp, bidItem.Native)
+	}
+
+	// Set the main action link from the native response link.
+	bidItem.ActionLink = bidItem.Native.Link.URL
 
 	// Ensure all required assets are present and extract media assets for future access.
 	bidItem.PriceScope.MaxBidImpPrice =
 		price.CalculatePurchasePrice(bidItem, adtype.ActionImpression)
 
 	// Extract media assets and cache them in the bid item for future access.
-	if format.Config != nil {
+	if format.Config != nil && len(format.Config.Assets) > 0 && len(bidItem.Native.Assets) > 0 {
 		for _, configAsset := range format.Config.Assets {
 			for _, asset := range bidItem.Native.Assets {
 				// Skip assets that don't match the config ID or carry no media.
@@ -129,8 +156,10 @@ func (it *ResponseBidItem) ContentItemString(name string) string {
 
 // ContentItem returns the ad response data for the given field name.
 func (it *ResponseBidItem) ContentItem(name string) any {
-	if it.Data != nil {
-		return it.Data[name]
+	if len(it.Data) > 0 {
+		if val, ok := it.Data[name]; ok {
+			return val
+		}
 	}
 
 	switch name {
@@ -156,6 +185,49 @@ func (it *ResponseBidItem) ContentItem(name string) any {
 				return asset.Data.Value
 			}
 		}
+	}
+	return nil
+}
+
+// SetContentItem sets the value of a named content field in the bid response.
+// It updates the native response structure and the Data map, and also adds any
+// associated file assets to the assets slice.
+func (it *ResponseBidItem) SetContentItem(name string, value any) error {
+	switch name {
+	case adtype.ContentItemLink:
+		it.Native.Link.URL = gocast.Str(value)
+	case adtype.ContentItemNotifyWinURL:
+		if it.Bid != nil {
+			it.Bid.NURL = gocast.Str(value)
+		}
+	case adtype.ContentItemNotifyDisplayURL:
+		if it.Bid != nil {
+			it.Bid.BURL = gocast.Str(value)
+		}
+	default:
+		if it.RespFormat != nil && it.RespFormat.Config != nil {
+			if asset := it.RespFormat.Config.AssetByName(name); asset != nil {
+				fileURL := gocast.Str(value)
+				fileAsset := &admodels.AdFileAsset{
+					ID:          uint64(asset.ID),
+					Name:        name,
+					ContentType: extractContentTypeFromFileName(fileURL),
+					URL:         fileURL,
+				}
+				switch {
+				case asset.IsImageSupport():
+					fileAsset.Type = types.AdFileAssetImageType
+				case asset.IsVideoSupport():
+					fileAsset.Type = types.AdFileAssetVideoType
+				}
+				it.assets = append(it.assets, fileAsset)
+				return nil
+			}
+		}
+		if it.Data == nil {
+			it.Data = make(map[string]any)
+		}
+		it.Data[name] = value
 	}
 	return nil
 }
