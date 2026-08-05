@@ -17,8 +17,8 @@ import (
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adtype"
+	"github.com/geniusrabbit/adcorelib/adtype/prices"
 	"github.com/geniusrabbit/adcorelib/billing"
-	"github.com/geniusrabbit/adcorelib/price"
 
 	"github.com/geniusrabbit/adsource-openrtb/response/common"
 	"github.com/geniusrabbit/adsource-openrtb/response/internal/interstitial"
@@ -71,11 +71,9 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 			Bid:        bid,
 			FormatType: bannerFormatType(bid.AdMarkup),
 			RespFormat: format,
-			PriceScope: price.PriceScopeImpression{
-				MaxBidImpPrice: 0,
-				BidImpPrice:    0,
-				ImpPrice:       cpmPrice / 1000, // Convert CPM to per-impression price
-				ECPM:           cpmPrice,
+			PriceScope: prices.PriceScope{
+				CPMScope: prices.CPMScope{MaxBidCPM: cpmPrice, BidCPM: cpmPrice},
+				ECPM:     cpmPrice,
 			},
 		},
 		BannerInfo: BannerInfo{
@@ -106,10 +104,6 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 	if !bidItem.BannerInfo.IsValid() {
 		return nil, ErrInvalidAdContent
 	}
-
-	// Extract impression and click trackers from the bid response.
-	bidItem.PriceScope.MaxBidImpPrice =
-		price.CalculatePurchasePrice(bidItem, adtype.ActionImpression)
 
 	return bidItem, nil
 }

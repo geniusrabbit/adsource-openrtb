@@ -45,9 +45,9 @@ import (
 	"github.com/geniusrabbit/adcorelib/admodels"
 	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adtype"
+	"github.com/geniusrabbit/adcorelib/adtype/prices"
 	"github.com/geniusrabbit/adcorelib/billing"
 	"github.com/geniusrabbit/adcorelib/context/ctxlogger"
-	"github.com/geniusrabbit/adcorelib/price"
 
 	"github.com/geniusrabbit/adsource-openrtb/response/common"
 )
@@ -90,11 +90,9 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 			Bid:        bid,
 			FormatType: types.FormatVideoType,
 			RespFormat: format,
-			PriceScope: price.PriceScopeImpression{
-				MaxBidImpPrice: 0,
-				BidImpPrice:    0,
-				ImpPrice:       cpmPrice / 1000, // Convert CPM to per-impression price
-				ECPM:           cpmPrice,
+			PriceScope: prices.PriceScope{
+				CPMScope: prices.CPMScope{MaxBidCPM: cpmPrice, BidCPM: cpmPrice},
+				ECPM:     cpmPrice,
 			},
 		},
 	}
@@ -119,7 +117,6 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 	}
 
 	bidItem.VAST = vastAd
-	bidItem.PriceScope.MaxBidImpPrice = price.CalculatePurchasePrice(bidItem, adtype.ActionImpression)
 
 	// Extract tracking links from the VAST response
 	if vastAd.Ads[0].InLine != nil {

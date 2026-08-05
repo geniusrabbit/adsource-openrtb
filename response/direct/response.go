@@ -17,8 +17,8 @@ import (
 
 	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adtype"
+	"github.com/geniusrabbit/adcorelib/adtype/prices"
 	"github.com/geniusrabbit/adcorelib/billing"
-	"github.com/geniusrabbit/adcorelib/price"
 
 	"github.com/geniusrabbit/adsource-openrtb/response/common"
 	"github.com/geniusrabbit/adsource-openrtb/response/internal/interstitial"
@@ -49,11 +49,9 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 			Bid:        bid,
 			FormatType: types.FormatDirectType,
 			RespFormat: format,
-			PriceScope: price.PriceScopeImpression{
-				MaxBidImpPrice: 0,
-				BidImpPrice:    0,
-				ImpPrice:       cpmPrice / 1000, // Convert CPM to per-impression price
-				ECPM:           cpmPrice,
+			PriceScope: prices.PriceScope{
+				CPMScope: prices.CPMScope{MaxBidCPM: cpmPrice, BidCPM: cpmPrice},
+				ECPM:     cpmPrice,
 			},
 		},
 	}
@@ -73,10 +71,6 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 		}
 		bidItem.DirectLink = popURL
 	}
-
-	// Ensure a valid direct link was resolved from the ad markup.
-	bidItem.PriceScope.MaxBidImpPrice =
-		price.CalculatePurchasePrice(bidItem, adtype.ActionImpression)
 
 	return bidItem, nil
 }

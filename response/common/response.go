@@ -18,8 +18,8 @@ import (
 	"github.com/geniusrabbit/adcorelib/admodels"
 	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adtype"
+	"github.com/geniusrabbit/adcorelib/adtype/prices"
 	"github.com/geniusrabbit/adcorelib/billing"
-	"github.com/geniusrabbit/adcorelib/price"
 )
 
 // BaseBidItem contains all fields and method implementations that are shared by
@@ -44,7 +44,7 @@ type BaseBidItem struct {
 	// External response data from RTB source
 	Bid *openrtb.Bid `json:"bid,omitempty"`
 
-	PriceScope price.PriceScopeImpression `json:"price_scope,omitempty"`
+	PriceScope prices.PriceScope `json:"price_scope,omitempty"`
 
 	// Competitive second AD
 	SecondAd adtype.SecondAd `json:"second_ad,omitempty"`
@@ -227,7 +227,7 @@ func (it *BaseBidItem) ECPM() billing.Money {
 	if it == nil || it.Bid == nil {
 		return 0
 	}
-	return it.PriceScope.ECPM
+	return it.PriceScope.EffectiveCPM()
 }
 
 // PriceTestMode always returns false for RTB bid items.
@@ -241,44 +241,37 @@ func (it *BaseBidItem) Price(action adtype.Action) billing.Money {
 	return it.PriceScope.PricePerAction(action)
 }
 
-// BidImpressionPrice returns the bid price that the system will pay for an impression.
-func (it *BaseBidItem) BidImpressionPrice() billing.Money {
-	return it.PriceScope.BidImpPrice
+// SetBidPrice sets the current bid price for the given action. If withCommission
+// is true, the price is grossed up by the discrepancy corrections and the
+// commission share before being stored.
+func (it *BaseBidItem) SetBidPrice(action adtype.Action, bid billing.Money, withCommission bool) error {
+	return it.PriceScope.SetBidPrice(action, bid, it, withCommission)
 }
 
-// SetBidImpressionPrice sets the bid impression price. Returns an error if the new
-// price exceeds the maximum allowed bid price.
-func (it *BaseBidItem) SetBidImpressionPrice(bid billing.Money) error {
-	if !it.PriceScope.SetBidImpressionPrice(bid, false) {
-		return adtype.ErrNewAuctionBidIsHigherThenMaxBid
-	}
-	return nil
-}
-
-// PrepareBidImpressionPrice adjusts the given price according to source correction
-// and commission factors.
-func (it *BaseBidItem) PrepareBidImpressionPrice(p billing.Money) billing.Money {
-	return it.PriceScope.PrepareBidImpressionPrice(p)
+// PrepareBidPrice prepares the bid price for the given action by clamping it
+// to the maximal allowed bid of that action (if defined).
+func (it *BaseBidItem) PrepareBidPrice(action adtype.Action, p billing.Money) billing.Money {
+	return it.PriceScope.PrepareBidPerAction(action, p)
 }
 
 // InternalAuctionCPMBid returns the maximal possible price without any commission.
 func (it *BaseBidItem) InternalAuctionCPMBid() billing.Money {
-	return price.CalculateInternalAuctionBid(it)
+	return it.ECPM()
 }
 
 // PurchasePrice returns the actual cost of the given action for the system.
 func (it *BaseBidItem) PurchasePrice(action adtype.Action) billing.Money {
-	return price.CalculatePurchasePrice(it, action)
+	return it.PriceScope.PublisherPricePerAction(action, it)
 }
 
-// PotentialPrice returns the price that could have been received but was marked as discrepancy.
+// PotentialPrice returns the maximal price which the advertiser could have paid for the action.
 func (it *BaseBidItem) PotentialPrice(action adtype.Action) billing.Money {
-	return price.CalculatePotentialPrice(it, action)
+	return it.PriceScope.PotentialPricePerAction(action)
 }
 
 // FinalPrice returns the price after all corrections and commissions for the given action.
 func (it *BaseBidItem) FinalPrice(action adtype.Action) billing.Money {
-	return price.CalculateFinalPrice(it, action)
+	return it.PriceScope.AdvertiserPricePerAction(action, it)
 }
 
 // Second returns the competitive second ad slot.
@@ -297,11 +290,17 @@ func (it *BaseBidItem) CommissionShareFactor() float64 {
 
 // SourceCorrectionFactor returns the price correction factor for this RTB source.
 func (it *BaseBidItem) SourceCorrectionFactor() float64 {
+	if it.Src == nil {
+		return 0
+	}
 	return it.Src.PriceCorrectionReduceFactor()
 }
 
 // TargetCorrectionFactor returns the revenue-share reduction factor for the target.
 func (it *BaseBidItem) TargetCorrectionFactor() float64 {
+	if it.Imp == nil || it.Imp.Target == nil {
+		return 0
+	}
 	return it.Imp.Target.RevenueShareReduceFactor()
 }
 
@@ -387,3 +386,8 @@ func (it *BaseBidItem) ContentMapping() map[string]string {
 		"%24%7BAUCTION_PRICE%3AB64%7D": base64Price,
 	}
 }
+
+var (
+	_ prices.Factors             = (*BaseBidItem)(nil)
+	_ prices.FixedPurchasePricer = (*BaseBidItem)(nil)
+)

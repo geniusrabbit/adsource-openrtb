@@ -15,8 +15,8 @@ import (
 	"github.com/geniusrabbit/adcorelib/admodels"
 	"github.com/geniusrabbit/adcorelib/adquery/bidrequest"
 	"github.com/geniusrabbit/adcorelib/adtype"
+	"github.com/geniusrabbit/adcorelib/adtype/prices"
 	"github.com/geniusrabbit/adcorelib/billing"
-	"github.com/geniusrabbit/adcorelib/price"
 
 	"github.com/geniusrabbit/adsource-openrtb/response/banner"
 	"github.com/geniusrabbit/adsource-openrtb/response/common"
@@ -62,11 +62,12 @@ func newRTBResponse(_ *admodels.Account, imp *adtype.Impression) *banner.Respons
 			Req:    &bidrequest.BidRequest{IDVal: "xxx", Imps: []*adtype.Impression{imp}},
 			Imp:    imp,
 			Bid:    &openrtb.Bid{Price: 60},
-			PriceScope: price.PriceScopeImpression{
-				MaxBidImpPrice: billing.MoneyFloat(10.),
-				BidImpPrice:    0,
-				ImpPrice:       billing.MoneyFloat(10.),
-				ECPM:           billing.MoneyFloat(10.),
+			PriceScope: prices.PriceScope{
+				CPMScope: prices.CPMScope{
+					MaxBidCPM: prices.CPMFromPrice(billing.MoneyFloat(10.)),
+					BidCPM:    prices.CPMFromPrice(billing.MoneyFloat(10.)),
+				},
+				ECPM: billing.MoneyFloat(10.),
 			},
 		},
 	}

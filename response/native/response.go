@@ -19,8 +19,8 @@ import (
 	"github.com/geniusrabbit/adcorelib/admodels"
 	"github.com/geniusrabbit/adcorelib/admodels/types"
 	"github.com/geniusrabbit/adcorelib/adtype"
+	"github.com/geniusrabbit/adcorelib/adtype/prices"
 	"github.com/geniusrabbit/adcorelib/billing"
-	"github.com/geniusrabbit/adcorelib/price"
 
 	"github.com/geniusrabbit/adsource-openrtb/request/rtbrules"
 	"github.com/geniusrabbit/adsource-openrtb/response/common"
@@ -57,11 +57,9 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 			Bid:        bid,
 			FormatType: types.FormatNativeType,
 			RespFormat: format,
-			PriceScope: price.PriceScopeImpression{
-				MaxBidImpPrice: 0,
-				BidImpPrice:    0,
-				ImpPrice:       cpmPrice / 1000, // Convert CPM to per-impression price
-				ECPM:           cpmPrice,
+			PriceScope: prices.PriceScope{
+				CPMScope: prices.CPMScope{MaxBidCPM: cpmPrice, BidCPM: cpmPrice},
+				ECPM:     cpmPrice,
 			},
 		},
 		Native:     &natresp.Response{},
@@ -102,10 +100,6 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 
 	// Set the main action link from the native response link.
 	bidItem.ActionLink = bidItem.Native.Link.URL
-
-	// Ensure all required assets are present and extract media assets for future access.
-	bidItem.PriceScope.MaxBidImpPrice =
-		price.CalculatePurchasePrice(bidItem, adtype.ActionImpression)
 
 	// Extract media assets and cache them in the bid item for future access.
 	if format.Config != nil && len(format.Config.Assets) > 0 && len(bidItem.Native.Assets) > 0 {
