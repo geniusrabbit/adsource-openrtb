@@ -26,7 +26,7 @@
 //
 // Sending a Bid Request:
 //   request := &bidrequest.BidRequest{ /* initialize bid request */ }
-//   if driver.Test(request) {
+//   if err := driver.Test(request); err == nil {
 //       response := driver.Bid(request)
 //       // process response
 //   }
@@ -51,7 +51,6 @@ package adsourceopenrtb
 
 import (
 	"context"
-	"slices"
 	"sync/atomic"
 	"time"
 
@@ -64,6 +63,7 @@ import (
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/context/ctxlogger"
 	counter "github.com/geniusrabbit/adcorelib/errorcounter"
+	"github.com/geniusrabbit/adcorelib/errtype"
 	"github.com/geniusrabbit/adcorelib/eventtraking/events"
 	"github.com/geniusrabbit/adcorelib/eventtraking/eventstream"
 	"github.com/geniusrabbit/adcorelib/fasttime"
@@ -149,16 +149,24 @@ func (d *driver) AccountID() uint64 {
 	return d.source.Account.ID()
 }
 
-// Test request before processing
-func (d *driver) Test(request adtype.BidRequester) bool {
+var (
+	ErrNilRequest           = errtype.Error("nil bid request")
+	ErrErrorCircuitOpen     = errtype.Error("error circuit open")
+	ErrRPSLimitExceeded     = errtype.Error("rps limit exceeded")
+	ErrTargetFilterRejected = errtype.Error("target filter rejected")
+)
+
+// Test request before processing.
+// Returns a typed cause on rejection, or nil when the request may proceed.
+func (d *driver) Test(request adtype.BidRequester) error {
 	if request == nil {
-		return false
+		return ErrNilRequest
 	}
 
 	if d.source.RPS > 0 {
 		if d.source.Options.ErrorsIgnore == 0 && !d.errorCounter.Next() {
 			d.latencyMetrics.IncSkip()
-			return false
+			return ErrErrorCircuitOpen
 		}
 
 		now := fasttime.UnixTimestampNano()
@@ -167,16 +175,29 @@ func (d *driver) Test(request adtype.BidRequester) bool {
 			d.rpsCurrent.Set(0)
 		} else if d.rpsCurrent.Get() >= int64(d.source.RPS) {
 			d.latencyMetrics.IncSkip()
-			return false
+			return ErrRPSLimitExceeded
 		}
 	}
 
-	if !slices.ContainsFunc(request.TargetPointers(), d.source.Test) {
-		d.latencyMetrics.IncSkip()
-		return false
+	pointers := request.TargetPointers()
+	if len(pointers) == 0 {
+		return nil
 	}
 
-	return true
+	var lastErr error
+	for _, pointer := range pointers {
+		err := d.source.Test(pointer)
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+	}
+
+	d.latencyMetrics.IncSkip()
+	if lastErr != nil {
+		return lastErr
+	}
+	return ErrTargetFilterRejected
 }
 
 // PriceCorrectionReduceFactor which is a potential

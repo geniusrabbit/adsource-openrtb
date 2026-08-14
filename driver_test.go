@@ -168,9 +168,9 @@ func TestNewDriver_MinimalWeightDefault(t *testing.T) {
 
 func TestDriver_Test_NoRPSLimit(t *testing.T) {
 	d := makeDriver(t, makeSource("openrtb"), &mockHTTPClient{})
-	// source.Test always returns true when there are no filters; no RPS configured
+	// source.Test always passes when there are no filters; no RPS configured
 	req := makeBidRequest()
-	assert.True(t, d.Test(req))
+	assert.NoError(t, d.Test(req))
 }
 
 func TestDriver_Test_RPSExceeded(t *testing.T) {
@@ -180,9 +180,9 @@ func TestDriver_Test_RPSExceeded(t *testing.T) {
 	req := makeBidRequest()
 
 	// First call should pass (counter == 0 < RPS 1); second should be rejected
-	d.Test(req) // warmup: sets lastRequestTime
+	_ = d.Test(req) // warmup: sets lastRequestTime
 	d.rpsCurrent.Set(1)
-	assert.False(t, d.Test(req), "RPS limit should block the second request")
+	assert.ErrorIs(t, d.Test(req), ErrRPSLimitExceeded, "RPS limit should block the second request")
 }
 
 // ─── driver.Bid – HTTP status handling ───────────────────────────────────────
