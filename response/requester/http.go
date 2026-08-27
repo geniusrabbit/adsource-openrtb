@@ -90,14 +90,15 @@ func NewHttpRTBRequester(source *admodels.RTBSource, netClient httpclient.Driver
 		// assigned to an RTBRuler interface produces a non-nil interface value,
 		// which defeats the "if rules != nil" guards inside the builders.
 		ruler rtbrules.RTBRuler
+		name  = source.Config.Rules
 	)
-
-	if source.Config.Rules != "" {
-		if rulesObj = rules.Rules[source.Config.Rules]; rulesObj == nil {
-			return nil, fmt.Errorf("source[%s]: %d: rules %s not found", source.Protocol, source.ID, source.Config.Rules)
-		}
-		ruler = rulesObj // only assign to the interface when concrete value is non-nil
+	if name == "" {
+		name = "default"
 	}
+	if rulesObj = rules.Rules[name]; rulesObj == nil {
+		return nil, fmt.Errorf("source[%s]: %d: rules %s not found", source.Protocol, source.ID, name)
+	}
+	ruler = rulesObj // only assign to the interface when concrete value is non-nil
 
 	if source.Protocol == "openrtb3" {
 		builder = requestv3.New(formatChecker, ruler)

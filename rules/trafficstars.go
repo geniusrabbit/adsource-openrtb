@@ -11,23 +11,23 @@ import (
 
 var trafficstars = &rtbrules.RTBRules{
 	Meta: rtbrules.Meta{
-		Title:       "TrafficStars",
+		Title: "TrafficStars",
 		Description: "RTB rules for TrafficStars ad network",
-		Version:     "1.0.0",
-		ModifiedAt:  time.Date(2026, 6, 20, 0, 0, 0, 0, time.UTC),
+		Version: "1.0.0",
+		ModifiedAt: time.Date(2026, 6, 20, 0, 0, 0, 0, time.UTC),
 		Docs: []info.Documentation{
 			{Title: "TrafficStars RTB Documentation", Link: "https://rtb-docs.trafficstars.com/"},
 		},
 	},
-	Formats:             []string{"direct", "native", "video", "banner_300x250", "banner_300x100", "banner_315x300", "banner_900x250", "banner_728x90", "banner_250x150", "banner_305x99", "proxy", "proxy_300x250", "proxy_300x100", "proxy_315x300", "proxy_900x250", "proxy_728x90", "proxy_250x150", "proxy_305x99"},
+	Formats: []string{"direct", "native", "video", "banner_300x250", "banner_300x100", "banner_315x300", "banner_900x250", "banner_728x90", "banner_250x150", "banner_305x99", "proxy", "proxy_300x250", "proxy_300x100", "proxy_315x300", "proxy_900x250", "proxy_728x90", "proxy_250x150", "proxy_305x99"},
 	InterstitialFormats: []string{"proxy"},
-	PushFormats:         []string{"native"},
+	PushFormats: []string{"native"},
 	Rules: []*rtbrules.RuleItem{
 		{
 			Condition: rtbrules.Condition{
-				Formats:      []string{"native"},
+				Formats: []string{"native"},
 				Interstitial: rtbrules.Exclude,
-				Push:         rtbrules.Include,
+				Push: rtbrules.Include,
 			},
 			Config: rtbrules.RuleConfig{
 				Ext: map[string]any{
@@ -43,6 +43,18 @@ var trafficstars = &rtbrules.RTBRules{
 					{ID: 101, Name: "title", Field: "title"},
 					{ID: 102, Name: "description", Field: "content"},
 					{ID: 105, Name: "url", Field: "url"},
+				},
+			},
+		},
+		{
+			Condition: rtbrules.Condition{
+				Formats: []string{"direct"},
+				Interstitial: rtbrules.Exclude,
+				Push: rtbrules.Exclude,
+			},
+			Config: rtbrules.RuleConfig{
+				Ext: map[string]any{
+					"type": "pop",
 				},
 			},
 		},

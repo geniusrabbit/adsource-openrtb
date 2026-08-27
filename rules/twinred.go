@@ -11,22 +11,22 @@ import (
 
 var twinred = &rtbrules.RTBRules{
 	Meta: rtbrules.Meta{
-		Title:       "TwinRed",
+		Title: "TwinRed",
 		Description: "RTB rules for TwinRed SSP OpenRTB integration",
-		Version:     "1.0.0",
-		ModifiedAt:  time.Date(2026, 6, 20, 0, 0, 0, 0, time.UTC),
+		Version: "1.0.0",
+		ModifiedAt: time.Date(2026, 6, 20, 0, 0, 0, 0, time.UTC),
 		Docs: []info.Documentation{
 			{Title: "TwinRed SSP OpenRTB Integration", Link: "https://control.twinred.com/docs/integration/sspopenrtb"},
 		},
 	},
-	Formats:             []string{"direct", "proxy", "video", "proxy_300x250", "proxy_300x100", "proxy_728x90", "banner_300x250", "banner_300x100", "banner_728x90"},
+	Formats: []string{"direct", "proxy", "video", "proxy_300x250", "proxy_300x100", "proxy_728x90", "banner_300x250", "banner_300x100", "banner_728x90"},
 	InterstitialFormats: []string{"proxy"},
 	Rules: []*rtbrules.RuleItem{
 		{
 			Condition: rtbrules.Condition{
-				Formats:      []string{"proxy_300x250", "proxy_300x100", "proxy_728x90", "banner_300x250", "banner_300x100", "banner_728x90"},
+				Formats: []string{"proxy_300x250", "proxy_300x100", "proxy_728x90", "banner_300x250", "banner_300x100", "banner_728x90"},
 				Interstitial: rtbrules.Exclude,
-				Push:         rtbrules.Exclude,
+				Push: rtbrules.Exclude,
 			},
 			Config: rtbrules.RuleConfig{
 				Ext: map[string]any{
@@ -36,9 +36,9 @@ var twinred = &rtbrules.RTBRules{
 		},
 		{
 			Condition: rtbrules.Condition{
-				Formats:      []string{"proxy"},
+				Formats: []string{"proxy"},
 				Interstitial: rtbrules.Include,
-				Push:         rtbrules.Exclude,
+				Push: rtbrules.Exclude,
 			},
 			Config: rtbrules.RuleConfig{
 				Ext: map[string]any{
@@ -48,9 +48,9 @@ var twinred = &rtbrules.RTBRules{
 		},
 		{
 			Condition: rtbrules.Condition{
-				Formats:      []string{"direct"},
+				Formats: []string{"direct"},
 				Interstitial: rtbrules.Exclude,
-				Push:         rtbrules.Exclude,
+				Push: rtbrules.Exclude,
 			},
 			Config: rtbrules.RuleConfig{
 				Ext: map[string]any{

@@ -56,6 +56,14 @@ func TestCondition_Matches_FormatFilter(t *testing.T) {
 	if c.Matches(fmt("video"), false, false) {
 		t.Error("video should not match")
 	}
+
+	cStar := &Condition{Formats: []string{"*"}}
+	if !cStar.Matches(fmt("direct"), false, false) {
+		t.Error(`condition formats ["*"] should match direct`)
+	}
+	if !cStar.Matches(fmt("native"), false, false) {
+		t.Error(`condition formats ["*"] should match native`)
+	}
 }
 
 func TestCondition_Matches_Interstitial(t *testing.T) {
@@ -119,6 +127,15 @@ func TestRTBRules_IsFormatSupport(t *testing.T) {
 	rAll := &RTBRules{}
 	if !rAll.IsFormatSupport(fmt("anything")) {
 		t.Error("empty formats list: all formats should be accepted")
+	}
+
+	// "*" → all formats accepted.
+	rStar := &RTBRules{Formats: []string{"*"}}
+	if !rStar.IsFormatSupport(fmt("direct")) {
+		t.Error(`formats ["*"]: direct should be accepted`)
+	}
+	if !rStar.IsFormatSupport(fmt("banner_300x250")) {
+		t.Error(`formats ["*"]: banner_300x250 should be accepted`)
 	}
 }
 

@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var trafficstars = &adtype.SourceInfo{
-	Name: "TrafficStars",
+	Name:        "TrafficStars",
 	Description: "TrafficStars is a self-serve programmatic ad network specializing in adult and mainstream traffic, offering banner, native, push, video, and popunder formats with full OpenRTB integration.",
-	Domain: "www.trafficstars.com",
-	IconURL: "https://www.trafficstars.com/favicon.ico",
-	LogoURL: "https://www.trafficstars.com/images/trafficstars-logo.svg",
-	URL: "https://www.trafficstars.com",
-	DSPDomains: []string{"*.tsyndicate.com"},
+	Domain:      "www.trafficstars.com",
+	IconURL:     "https://www.trafficstars.com/favicon.ico",
+	LogoURL:     "https://www.trafficstars.com/images/trafficstars-logo.svg",
+	URL:         "https://www.trafficstars.com",
+	DSPDomains:  []string{"*.tsyndicate.com"},
 }

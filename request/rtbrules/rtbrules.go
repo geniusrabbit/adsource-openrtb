@@ -29,7 +29,7 @@ func (c *Condition) Matches(format *types.Format, isIntr, isPush bool) bool {
 	if c == nil {
 		return false
 	}
-	if len(c.Formats) > 0 && !slices.Contains(c.Formats, format.Codename) {
+	if len(c.Formats) > 0 && !containsFormat(c.Formats, format.Codename) {
 		return false
 	}
 	if c.Interstitial != Any {
@@ -69,10 +69,16 @@ type RTBRules struct {
 	Rules               []*RuleItem `json:"rules,omitempty"`
 }
 
+// containsFormat reports whether the format list accepts the given codename.
+// An empty list or a "*" entry matches any format.
+func containsFormat(list []string, codename string) bool {
+	return len(list) == 0 || slices.Contains(list, "*") || slices.Contains(list, codename)
+}
+
 // IsFormatSupport returns true when the format codename is listed in Formats.
-// An empty Formats list means no restriction — all formats are accepted.
+// An empty Formats list or a "*" entry means no restriction — all formats are accepted.
 func (r *RTBRules) IsFormatSupport(format *types.Format) bool {
-	return r != nil && (len(r.Formats) == 0 || slices.Contains(r.Formats, format.Codename))
+	return r != nil && containsFormat(r.Formats, format.Codename)
 }
 
 // IsInterstitialSupport returns true when InterstitialFormats is non-empty and

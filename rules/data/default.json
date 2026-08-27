@@ -1,0 +1,20 @@
+{
+    "meta": {
+      "title": "Default",
+      "description": "Default RTB rules",
+      "version": "1.0.0",
+      "modified_at": "2026-08-27T00:00:00Z"
+    },
+    "formats": ["*"],
+    "rules": [
+      {
+        "condition": {
+          "formats": ["direct"],
+          "interstitial": "exclude",
+          "push": "exclude"
+        },
+        "config": { "ext": { "type": "pop" } }
+      }
+    ]
+  }
+  

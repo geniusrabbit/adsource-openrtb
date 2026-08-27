@@ -8,6 +8,7 @@ import (
 
 // Rules maps RTB source names to their compiled rule sets.
 var Rules = map[string]*rtbrules.RTBRules{
+	"default": defaultRules,
 	"trafficstars": trafficstars,
-	"twinred":      twinred,
+	"twinred": twinred,
 }

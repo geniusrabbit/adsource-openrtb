@@ -14,6 +14,8 @@ import (
 	"github.com/geniusrabbit/adcorelib/adquery/bidrequest"
 	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adcorelib/net/httpclient"
+
+	"github.com/geniusrabbit/adsource-openrtb/rules"
 )
 
 // ─── minimal mock infrastructure ─────────────────────────────────────────────
@@ -109,4 +111,27 @@ func TestHttpRTBRequester_FillRequest_ContentType(t *testing.T) {
 	req := &httpTestRequest{}
 	r.fillRequest(makeTestBidRequest(), req)
 	assert.Equal(t, "application/json", req.headers["Content-Type"])
+}
+
+func TestHttpRTBRequester_RulesFallbackDefault(t *testing.T) {
+	r, err := NewHttpRTBRequester(makeRTBSource("openrtb"), &httpTestClient{})
+	require.NoError(t, err)
+	assert.Same(t, rules.Rules["default"], r.rules)
+}
+
+func TestHttpRTBRequester_NamedRules(t *testing.T) {
+	src := makeRTBSource("openrtb")
+	src.Config.Rules = "trafficstars"
+	r, err := NewHttpRTBRequester(src, &httpTestClient{})
+	require.NoError(t, err)
+	assert.Same(t, rules.Rules["trafficstars"], r.rules)
+	assert.NotSame(t, rules.Rules["default"], r.rules)
+}
+
+func TestHttpRTBRequester_UnknownRules(t *testing.T) {
+	src := makeRTBSource("openrtb")
+	src.Config.Rules = "unknown-network"
+	_, err := NewHttpRTBRequester(src, &httpTestClient{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown-network")
 }
