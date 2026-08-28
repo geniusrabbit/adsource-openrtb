@@ -64,7 +64,7 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 	cpmPrice := billing.MoneyFloat(bid.Price)
 	bidItem := &ResponseBidItem{
 		BaseBidItem: common.BaseBidItem{
-			ItemID:     imp.ID,
+			ItemID:     bid.ID,
 			Src:        src,
 			Req:        req,
 			Imp:        imp,

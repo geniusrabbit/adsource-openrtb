@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 
 	"github.com/bsm/openrtb/native/request"
-	"github.com/bsm/openrtb/native/response"
 	natresp "github.com/bsm/openrtb/native/response"
 	requestV3 "github.com/bsm/openrtb/v3/native/request"
 
@@ -26,10 +25,10 @@ import (
 // It handles two common wire formats:
 //  1. A top-level wrapper object: {"native": {...}}
 //  2. The native response object directly: {"link": ..., "assets": [...]}
-func decodeNativeMarkup(nativeResp *response.Response, data []byte) (err error) {
+func decodeNativeMarkup(nativeResp *natresp.Response, data []byte) (err error) {
 	var (
 		native = struct {
-			Native *response.Response `json:"native"`
+			Native *natresp.Response `json:"native"`
 		}{
 			Native: nativeResp,
 		}
@@ -79,7 +78,7 @@ func openrtbNativeLabelNameByType(dataTypeID int) string {
 // extractNativeV2Data extracts native ad data from an OpenRTB Native v1.x/v2.x
 // request and response pair. Asset IDs in the response are matched against the
 // request to determine the correct field name for each data asset.
-func extractNativeV2Data(req *request.Request, resp *response.Response) map[string]any {
+func extractNativeV2Data(req *request.Request, resp *natresp.Response) map[string]any {
 	data := map[string]any{}
 	data[adtype.ContentItemLink] = resp.Link.URL
 
@@ -107,7 +106,7 @@ func extractNativeV2Data(req *request.Request, resp *response.Response) map[stri
 // extractNativeV3Data extracts native ad data from an OpenRTB Native v3.x request
 // paired with a v1.x/v2.x response. Asset IDs are matched across protocol versions
 // to determine the correct field name for each data asset.
-func extractNativeV3Data(req *requestV3.Request, resp *response.Response) map[string]any {
+func extractNativeV3Data(req *requestV3.Request, resp *natresp.Response) map[string]any {
 	data := map[string]any{}
 	data[adtype.ContentItemLink] = resp.Link.URL
 
@@ -137,7 +136,7 @@ func extractNativeV3Data(req *requestV3.Request, resp *response.Response) map[st
 // the resulting field map. Returns nil if no native request is attached.
 //
 //go:inline
-func extractNativeDataFromImpression(imp *adtype.Impression, native *response.Response) map[string]any {
+func extractNativeDataFromImpression(imp *adtype.Impression, native *natresp.Response) map[string]any {
 	if nativeRequestV2 := imp.RTBNativeRequest(); nativeRequestV2 != nil {
 		return extractNativeV2Data(nativeRequestV2, native)
 	} else if nativeRequestV3 := imp.RTBNativeRequestV3(); nativeRequestV3 != nil {

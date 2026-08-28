@@ -17,6 +17,8 @@ import (
 
 // decodePopMarkup extracts the popunder URL from an XML ad markup payload.
 // It supports two common XML structures: <popunderAd><url> and <ad><popunderAd><url>.
+//
+//lint:ignore U1000 unused function
 func decodePopMarkup(data []byte) (val string, err error) {
 	var item struct {
 		URL1 string `xml:"popunderAd>url"`
@@ -34,6 +36,8 @@ func decodePopMarkup(data []byte) (val string, err error) {
 
 // customDirectURL extracts a direct landing page URL from a JSON ad markup payload.
 // It checks the "url", "landingpage", and "link" fields in order.
+//
+//lint:ignore U1000 unused function
 func customDirectURL(data []byte) (val string, err error) {
 	var item struct {
 		URL         string `json:"url"`
@@ -119,6 +123,8 @@ type openNativeVASTTagInfo struct {
 
 // parseOpenNativeVASTtag decodes a VAST 2.0 XML payload into [openNativeVASTTagInfo].
 // The charset-aware decoder is used to handle non-UTF-8 encoded documents.
+//
+//lint:ignore U1000 unused function
 func parseOpenNativeVASTtag(data []byte) (*openNativeVASTTagInfo, error) {
 	var item openNativeVASTTagInfo
 	decoder := xml.NewDecoder(bytes.NewReader(data))
