@@ -40,6 +40,7 @@ import (
 	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/xtypes"
 	"github.com/haxqer/vast"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/geniusrabbit/adcorelib/admodels"
@@ -51,6 +52,8 @@ import (
 
 	"github.com/geniusrabbit/adsource-openrtb/response/common"
 )
+
+var ErrNoAssetsFound = errors.New("no assets found in VAST response")
 
 // ResponseBidItem is the bid response item for VAST video ad formats.
 // It implements [adtype.ResponseItem] and provides access to the decoded VAST
@@ -163,15 +166,7 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 			}
 		}
 	} else if vastAd.Ads[0].Wrapper != nil {
-		assets = admodels.AdFileAssets{
-			{
-				ID:          999, // Arbitrary ID for the main VAST tag asset
-				Name:        "vast_tag",
-				URL:         vastAd.Ads[0].Wrapper.VASTAdTagURI.CDATA,
-				Type:        types.AdFileAssetVASTTagType,
-				ContentType: "application/xml",
-			},
-		}
+		bidItem.SetContentItem("vast_tag", vastAd.Ads[0].Wrapper.VASTAdTagURI.CDATA)
 		for _, creative := range vastAd.Ads[0].Wrapper.Creatives {
 			if creative.Linear == nil || creative.Linear.Icons == nil {
 				continue
@@ -181,6 +176,11 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 				assets = append(assets, iconAssets...)
 			}
 		}
+	}
+
+	// If no assets found, return an error
+	if len(assets) == 0 {
+		return nil, ErrNoAssetsFound
 	}
 
 	// Cache the extracted assets in the bid item for future access.
@@ -236,6 +236,14 @@ func (it *ResponseBidItem) ContentItem(name string) any {
 		}
 	}
 	return nil
+}
+
+// SetContentItem sets the ad response data for the given field name.
+func (it *ResponseBidItem) SetContentItem(name string, value any) {
+	if it.Data == nil {
+		it.Data = make(map[string]any)
+	}
+	it.Data[name] = value
 }
 
 // ContentFields returns a map of all populated content fields (nil for VAST format).
