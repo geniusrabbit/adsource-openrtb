@@ -17,4 +17,5 @@ type RTBRuler interface {
 	NoRequestObject(format *types.Format, isIntr, isPush bool) bool
 	ApplyRules(format *types.Format, isIntr, isPush bool, fn func(rule *RuleItem) error) error
 	AdjustImpression(target TargetImpression, imp *adtype.Impression, format *types.Format) error
+	Detect(sig RequestSignal) *Detection
 }

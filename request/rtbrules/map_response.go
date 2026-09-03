@@ -57,6 +57,52 @@ func (mr *MapResponse) HasAssets() bool {
 	return mr != nil && len(mr.Assets) > 0
 }
 
+// Write is the inverse of Mapping: for each asset it calls get(name) and
+// writes the value into dst at Field (slash-separated path). Nil values are
+// skipped. Intermediate path nodes are created as nested maps.
+func (mr *MapResponse) Write(dst map[string]any, get func(string) any) error {
+	if mr == nil || dst == nil || get == nil {
+		return nil
+	}
+	mr.prepare()
+	for i := range mr.Assets {
+		asset := &mr.Assets[i]
+		if len(asset.segments) == 0 {
+			continue
+		}
+		val := get(asset.Name)
+		if val == nil {
+			continue
+		}
+		if err := setSegments(dst, asset.segments, val); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// setSegments writes val at the nested path described by segments, creating
+// intermediate map[string]any nodes as needed.
+func setSegments(dst map[string]any, segments []string, val any) error {
+	if len(segments) == 0 {
+		return nil
+	}
+	current := dst
+	for i, seg := range segments {
+		if i == len(segments)-1 {
+			current[seg] = val
+			return nil
+		}
+		next, ok := current[seg].(map[string]any)
+		if !ok {
+			next = map[string]any{}
+			current[seg] = next
+		}
+		current = next
+	}
+	return nil
+}
+
 // resolveSegments walks data following pre-split path segments and returns
 // the terminal value, or nil if any segment is missing or an intermediate
 // node is not a map[string]any.

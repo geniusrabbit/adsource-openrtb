@@ -331,3 +331,51 @@ func TestMapResponse_Mapping_NilReceiver(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestMapResponse_Write_FlatAndNested(t *testing.T) {
+	mr := &MapResponse{
+		Assets: []MapResponseAsset{
+			{Name: "title", Field: "title"},
+			{Name: "main", Field: "image"},
+			{Name: "nested", Field: "images/main/url"},
+			{Name: "skip", Field: "missing"},
+		},
+	}
+	dst := map[string]any{}
+	values := map[string]any{
+		"title":  "Hello",
+		"main":   "https://img.example/a.png",
+		"nested": "https://img.example/b.png",
+		"skip":   nil,
+	}
+	if err := mr.Write(dst, func(name string) any { return values[name] }); err != nil {
+		t.Fatal(err)
+	}
+	if dst["title"] != "Hello" {
+		t.Errorf("title: %v", dst["title"])
+	}
+	if dst["image"] != "https://img.example/a.png" {
+		t.Errorf("image: %v", dst["image"])
+	}
+	images, ok := dst["images"].(map[string]any)
+	if !ok {
+		t.Fatalf("images not a map: %v", dst["images"])
+	}
+	main, ok := images["main"].(map[string]any)
+	if !ok {
+		t.Fatalf("images.main not a map: %v", images["main"])
+	}
+	if main["url"] != "https://img.example/b.png" {
+		t.Errorf("nested url: %v", main["url"])
+	}
+	if _, ok := dst["missing"]; ok {
+		t.Error("nil value should not be written")
+	}
+}
+
+func TestMapResponse_Write_NilReceiver(t *testing.T) {
+	var mr *MapResponse
+	if err := mr.Write(map[string]any{}, func(string) any { return "x" }); err != nil {
+		t.Fatal(err)
+	}
+}
