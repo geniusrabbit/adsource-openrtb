@@ -81,6 +81,11 @@ func (it *BaseBidItem) CampaignID() uint64 {
 	return 0
 }
 
+// LinkID returns the AdLink ID (always 0 for RTB sources).
+func (it *BaseBidItem) LinkID() uint64 {
+	return 0
+}
+
 // AccountID returns the account ID from the ad source.
 func (it *BaseBidItem) AccountID() uint64 {
 	if it.Src != nil {
