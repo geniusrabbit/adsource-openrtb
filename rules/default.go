@@ -10,18 +10,18 @@ import (
 
 var defaultRules = &rtbrules.RTBRules{
 	Meta: rtbrules.Meta{
-		Title: "Default",
+		Title:       "Default",
 		Description: "Default RTB rules",
-		Version: "1.0.0",
-		ModifiedAt: time.Date(2026, 8, 27, 0, 0, 0, 0, time.UTC),
+		Version:     "1.0.0",
+		ModifiedAt:  time.Date(2026, 8, 27, 0, 0, 0, 0, time.UTC),
 	},
 	Formats: []string{"*"},
 	Rules: []*rtbrules.RuleItem{
 		{
 			Condition: rtbrules.Condition{
-				Formats: []string{"direct"},
+				Formats:      []string{"direct"},
 				Interstitial: rtbrules.Exclude,
-				Push: rtbrules.Exclude,
+				Push:         rtbrules.Exclude,
 			},
 			Config: rtbrules.RuleConfig{
 				Ext: map[string]any{

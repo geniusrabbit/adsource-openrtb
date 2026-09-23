@@ -12,7 +12,7 @@ func TestRTBRules_Detect_NilReceiver(t *testing.T) {
 	}
 }
 
-func TestRTBRules_Detect_EmptyExtSkipped(t *testing.T) {
+func TestRTBRules_Detect_EmptyExtMatches(t *testing.T) {
 	r := &RTBRules{
 		Rules: []*RuleItem{
 			{
@@ -21,8 +21,9 @@ func TestRTBRules_Detect_EmptyExtSkipped(t *testing.T) {
 			},
 		},
 	}
-	if got := r.Detect(RequestSignal{Ext: map[string]any{"type": "webpush"}}); got != nil {
-		t.Fatalf("empty Config.Ext must not match, got %+v", got)
+	got := r.Detect(RequestSignal{Ext: map[string]any{"type": "webpush"}})
+	if got == nil || len(got.FormatCodes) != 1 || got.FormatCodes[0] != "native" {
+		t.Fatalf("empty Config.Ext matches, got %+v", got)
 	}
 }
 

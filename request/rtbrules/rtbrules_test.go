@@ -215,6 +215,28 @@ func TestRTBRules_AdjustImpression_NoMatch(t *testing.T) {
 	}
 }
 
+func TestRTBRules_RulesFallback(t *testing.T) {
+	r := &RTBRules{
+		Rules: []*RuleItem{
+			{
+				Condition: Condition{Formats: []string{"direct"}},
+				Config:    RuleConfig{Ext: map[string]any{"type": "pop"}},
+			},
+		},
+	}
+	got := r.Detect(RequestSignal{Ext: map[string]any{"type": "pop"}})
+	if got == nil || len(got.FormatCodes) != 1 || got.FormatCodes[0] != "direct" {
+		t.Fatalf("detect: %+v", got)
+	}
+	target := &stubTarget{}
+	if err := r.AdjustImpression(target, imp(false, false), fmt("direct")); err != nil {
+		t.Fatal(err)
+	}
+	if target.ext["type"] != "pop" {
+		t.Fatalf("adjust: %v", target.ext)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // resolveFieldPath
 // ---------------------------------------------------------------------------

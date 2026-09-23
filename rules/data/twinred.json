@@ -23,7 +23,7 @@
     "banner_728x90"
   ],
   "interstitial_formats": ["proxy"],
-  "rules": [
+  "ssp_rules": [
     {
       "condition": {
         "formats": [
@@ -54,6 +54,15 @@
         "push": "exclude"
       },
       "config": { "ext": { "format": 4 } }
+    }
+  ],
+  "dsp_rules": [
+    {
+      "condition": {
+        "formats": ["direct"],
+        "interstitial": "exclude",
+        "push": "exclude"
+      }
     }
   ]
 }

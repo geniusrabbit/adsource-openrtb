@@ -67,6 +67,30 @@ type RTBRules struct {
 	InterstitialFormats []string    `json:"interstitial_formats,omitempty"`
 	PushFormats         []string    `json:"push_formats,omitempty"`
 	Rules               []*RuleItem `json:"rules,omitempty"`
+	SSPRules            []*RuleItem `json:"ssp_rules,omitempty"`
+	DSPRules            []*RuleItem `json:"dsp_rules,omitempty"`
+}
+
+// sspRules is the outbound list. A non-empty ssp_rules replaces rules.
+func (r *RTBRules) sspRules() []*RuleItem {
+	if r == nil {
+		return nil
+	}
+	if len(r.SSPRules) > 0 {
+		return r.SSPRules
+	}
+	return r.Rules
+}
+
+// dspRules is the ingress list. A non-empty dsp_rules replaces rules.
+func (r *RTBRules) dspRules() []*RuleItem {
+	if r == nil {
+		return nil
+	}
+	if len(r.DSPRules) > 0 {
+		return r.DSPRules
+	}
+	return r.Rules
 }
 
 // containsFormat reports whether the format list accepts the given codename.
@@ -98,7 +122,7 @@ func (r *RTBRules) HasMappingRules() bool {
 	if r == nil {
 		return false
 	}
-	for _, rule := range r.Rules {
+	for _, rule := range r.sspRules() {
 		if rule.MapResponse != nil && rule.MapResponse.HasAssets() {
 			return true
 		}
@@ -111,7 +135,7 @@ func (r *RTBRules) ApplyRules(format *types.Format, isIntr, isPush bool, fn func
 	if r == nil {
 		return nil
 	}
-	for _, rule := range r.Rules {
+	for _, rule := range r.sspRules() {
 		if rule.Condition.Matches(format, isIntr, isPush) {
 			if err := fn(rule); err != nil {
 				return err
@@ -127,7 +151,7 @@ func (r *RTBRules) NoRequestObject(format *types.Format, isIntr, isPush bool) bo
 	if r == nil {
 		return false
 	}
-	for _, rule := range r.Rules {
+	for _, rule := range r.sspRules() {
 		if rule.Condition.Matches(format, isIntr, isPush) {
 			return rule.Config.NoRequestObject
 		}
@@ -140,7 +164,7 @@ func (r *RTBRules) AdjustImpression(target TargetImpression, imp *adtype.Impress
 	if r == nil {
 		return nil
 	}
-	for _, rule := range r.Rules {
+	for _, rule := range r.sspRules() {
 		if rule.Condition.Matches(format, imp.IsInterstitial(), imp.IsPush()) {
 			target.SetExt(rule.Config.Ext)
 		}

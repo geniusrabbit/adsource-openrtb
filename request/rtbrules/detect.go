@@ -22,9 +22,10 @@ type Detection struct {
 	Rule            *RuleItem
 }
 
-// Detect returns the first rule whose Config.Ext is a subset of the incoming
-// impression Ext. Rules with empty Ext are skipped (empty is a subset of
-// everything and would otherwise match every request).
+// Detect returns the first dsp rule whose Config.Ext is a subset of the
+// incoming impression Ext. A non-empty dsp_rules list replaces rules.
+// An empty Ext does not filter, so that rule matches any signal that passes
+// the interstitial check.
 //
 // Interstitial Exclude + instl skips the rule. Push and Interstitial Include
 // are outputs. No match returns nil.
@@ -32,11 +33,11 @@ func (r *RTBRules) Detect(sig RequestSignal) *Detection {
 	if r == nil {
 		return nil
 	}
-	for _, rule := range r.Rules {
-		if rule == nil || len(rule.Config.Ext) == 0 {
+	for _, rule := range r.dspRules() {
+		if rule == nil {
 			continue
 		}
-		if !extSubset(rule.Config.Ext, sig.Ext) {
+		if len(rule.Config.Ext) > 0 && !extSubset(rule.Config.Ext, sig.Ext) {
 			continue
 		}
 		if rule.Condition.Interstitial == Exclude && sig.Instl {

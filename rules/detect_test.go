@@ -4,8 +4,14 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/geniusrabbit/adcorelib/admodels/types"
+	"github.com/geniusrabbit/adcorelib/adtype"
 	"github.com/geniusrabbit/adsource-openrtb/request/rtbrules"
 )
+
+type extTarget struct{ ext map[string]any }
+
+func (s *extTarget) SetExt(ext map[string]any) { s.ext = ext }
 
 func TestByName(t *testing.T) {
 	if ByName("twinred") != Rules["twinred"] {
@@ -21,23 +27,32 @@ func TestByName(t *testing.T) {
 
 func TestDetect_TwinRed(t *testing.T) {
 	r := Rules["twinred"]
-	direct := r.Detect(rtbrules.RequestSignal{Ext: map[string]any{"format": float64(4)}})
-	if direct == nil || !slices.Equal(direct.FormatCodes, []string{"direct"}) {
-		t.Fatalf("format=4: %+v", direct)
+	for _, ext := range []map[string]any{
+		{"format": float64(4)},
+		{"format": float64(1)},
+		{"format": float64(5)},
+		nil,
+	} {
+		got := r.Detect(rtbrules.RequestSignal{Ext: ext})
+		if got == nil || got.Interstitial || !slices.Equal(got.FormatCodes, []string{"direct"}) {
+			t.Fatalf("ext=%v: %+v", ext, got)
+		}
 	}
+	if got := r.Detect(rtbrules.RequestSignal{Instl: true, Ext: map[string]any{"format": float64(5)}}); got != nil {
+		t.Fatalf("interstitial: %+v", got)
+	}
+}
 
-	intr := r.Detect(rtbrules.RequestSignal{Ext: map[string]any{"format": 5}})
-	if intr == nil || !intr.Interstitial || !slices.Equal(intr.FormatCodes, []string{"proxy"}) {
-		t.Fatalf("format=5: %+v", intr)
+func TestAdjustImpression_TwinRed(t *testing.T) {
+	r := Rules["twinred"]
+	target := &extTarget{}
+	format := &types.Format{Codename: "direct"}
+	imp := &adtype.Impression{}
+	if err := r.AdjustImpression(target, imp, format); err != nil {
+		t.Fatal(err)
 	}
-
-	banner := r.Detect(rtbrules.RequestSignal{Ext: map[string]any{"format": 1}})
-	if banner == nil {
-		t.Fatal("format=1: no match")
-	}
-	want := []string{"proxy_300x250", "proxy_300x100", "proxy_728x90", "banner_300x250", "banner_300x100", "banner_728x90"}
-	if !slices.Equal(banner.FormatCodes, want) {
-		t.Errorf("format=1 codes=%v want %v", banner.FormatCodes, want)
+	if target.ext["format"] != 4 {
+		t.Fatalf("direct ext=%v", target.ext)
 	}
 }
 

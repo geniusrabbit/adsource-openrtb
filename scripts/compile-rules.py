@@ -231,6 +231,15 @@ def gen_meta(meta: dict, indent: int) -> str:
     return f"rtbrules.Meta{{\n{body}\n{tab}}}"
 
 
+def append_rule_list(lines: list[str], field: str, rules: list) -> None:
+    if not rules:
+        return
+    lines.append(f"\t{field}: []*rtbrules.RuleItem{{")
+    for rule in rules:
+        lines.append(gen_rule_item(rule, indent=2))
+    lines.append("\t},")
+
+
 def generate_rules_file(name: str, data: dict) -> str:
     ident    = go_ident(name)
     meta     = data.get("meta") or {}
@@ -271,12 +280,9 @@ def generate_rules_file(name: str, data: dict) -> str:
     if data.get("push_formats"):
         lines.append(f"\tPushFormats: {go_string_slice(data['push_formats'])},")
 
-    rules = data.get("rules", [])
-    if rules:
-        lines.append("\tRules: []*rtbrules.RuleItem{")
-        for rule in rules:
-            lines.append(gen_rule_item(rule, indent=2))
-        lines.append("\t},")
+    append_rule_list(lines, "Rules", data.get("rules") or [])
+    append_rule_list(lines, "SSPRules", data.get("ssp_rules") or [])
+    append_rule_list(lines, "DSPRules", data.get("dsp_rules") or [])
 
     lines.append("}")
     lines.append("")
