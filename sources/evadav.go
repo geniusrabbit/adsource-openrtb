@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var evadav = &adtype.SourceInfo{
-	Name: "EvaDav",
+	Name:        "EvaDav",
 	Description: "EvaDav is a performance advertising network specializing in push notifications, native ads, and popunders with global reach, real-time bidding, and advanced audience targeting capabilities.",
-	Domain: "evadav.com",
-	IconURL: "https://evadav.com/favicon.ico",
-	LogoURL: "https://evadav.com/images/evadav-logo.svg",
-	URL: "https://evadav.com",
-	DSPDomains: []string{"rtb.evadav.com"},
+	Domain:      "evadav.com",
+	IconURL:     "https://evadav.com/favicon.ico",
+	LogoURL:     "https://evadav.com/images/evadav-logo.svg",
+	URL:         "https://evadav.com",
+	DSPDomains:  []string{"rtb.evadav.com"},
 }

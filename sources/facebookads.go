@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var facebookads = &adtype.SourceInfo{
-	Name: "Meta Ads",
+	Name:        "Meta Ads",
 	Description: "Meta's advertising platform (formerly Facebook Ads) providing access to highly targeted audiences across Facebook, Instagram, Messenger, and the Meta Audience Network.",
-	Domain: "business.facebook.com",
-	IconURL: "https://www.facebook.com/favicon.ico",
-	LogoURL: "https://www.facebook.com/images/fb_icon_325x325.png",
-	URL: "https://www.facebook.com/business/ads",
-	DSPDomains: []string{"an.facebook.com"},
+	Domain:      "business.facebook.com",
+	IconURL:     "https://www.facebook.com/favicon.ico",
+	LogoURL:     "https://www.facebook.com/images/fb_icon_325x325.png",
+	URL:         "https://www.facebook.com/business/ads",
+	DSPDomains:  []string{"an.facebook.com"},
 }

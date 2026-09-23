@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var myadcash = &adtype.SourceInfo{
-	Name: "MyAdCash",
+	Name:        "MyAdCash",
 	Description: "MyAdCash is a global self-serve advertising network offering popunder, push notification, native, and interstitial formats with real-time bidding, advanced targeting, and worldwide publisher reach.",
-	Domain: "www.myadcash.com",
-	IconURL: "https://www.myadcash.com/favicon.ico",
-	LogoURL: "https://www.myadcash.com/images/myadcash-logo.svg",
-	URL: "https://www.myadcash.com",
-	DSPDomains: []string{"rtb.myadcash.com"},
+	Domain:      "www.myadcash.com",
+	IconURL:     "https://www.myadcash.com/favicon.ico",
+	LogoURL:     "https://www.myadcash.com/images/myadcash-logo.svg",
+	URL:         "https://www.myadcash.com",
+	DSPDomains:  []string{"rtb.myadcash.com"},
 }

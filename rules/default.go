@@ -16,13 +16,27 @@ var defaultRules = &rtbrules.RTBRules{
 		ModifiedAt:  time.Date(2026, 8, 27, 0, 0, 0, 0, time.UTC),
 	},
 	Formats: []string{"*"},
-	Rules: []*rtbrules.RuleItem{
+	SSPRules: []*rtbrules.RuleItem{
 		{
 			Condition: rtbrules.Condition{
 				Formats:      []string{"direct"},
 				Interstitial: rtbrules.Exclude,
 				Push:         rtbrules.Exclude,
 			},
+			Config: rtbrules.RuleConfig{
+				Ext: map[string]any{
+					"type": "pop",
+				},
+			},
+		},
+	},
+	DSPRules: []*rtbrules.RuleItem{
+		{
+			Condition: rtbrules.Condition{
+				Interstitial: rtbrules.Exclude,
+				Push:         rtbrules.Exclude,
+			},
+			Formats: []string{"direct"},
 			Config: rtbrules.RuleConfig{
 				Ext: map[string]any{
 					"type": "pop",

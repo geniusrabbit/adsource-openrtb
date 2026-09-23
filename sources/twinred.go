@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var twinred = &adtype.SourceInfo{
-	Name: "TwinRed",
+	Name:        "TwinRed",
 	Description: "TwinRed is a programmatic advertising platform focused on adult and mainstream premium inventory, providing display, video, popunder, and native ad formats with OpenRTB/RTB support.",
-	Domain: "www.twinred.com",
-	IconURL: "https://www.twinred.com/favicon.ico",
-	LogoURL: "https://www.twinred.com/images/twinred-logo.svg",
-	URL: "https://www.twinred.com",
-	DSPDomains: []string{"feed.ad.twinrdengine.com"},
+	Domain:      "www.twinred.com",
+	IconURL:     "https://www.twinred.com/favicon.ico",
+	LogoURL:     "https://www.twinred.com/images/twinred-logo.svg",
+	URL:         "https://www.twinred.com",
+	DSPDomains:  []string{"feed.ad.twinrdengine.com"},
 }

@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var popcash = &adtype.SourceInfo{
-	Name: "PopCash",
+	Name:        "PopCash",
 	Description: "PopCash is a global popunder advertising network offering high-volume traffic monetization with instant approval, real-time statistics, and targeting options including geo, device, and browser.",
-	Domain: "www.popcash.net",
-	IconURL: "https://www.popcash.net/favicon.ico",
-	LogoURL: "https://www.popcash.net/images/popcash-logo.png",
-	URL: "https://www.popcash.net",
-	DSPDomains: []string{"rtb.popcash.net"},
+	Domain:      "www.popcash.net",
+	IconURL:     "https://www.popcash.net/favicon.ico",
+	LogoURL:     "https://www.popcash.net/images/popcash-logo.png",
+	URL:         "https://www.popcash.net",
+	DSPDomains:  []string{"rtb.popcash.net"},
 }

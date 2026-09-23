@@ -22,10 +22,11 @@ type Detection struct {
 	Rule            *RuleItem
 }
 
-// Detect returns the first dsp rule whose Config.Ext is a subset of the
-// incoming impression Ext. A non-empty dsp_rules list replaces rules.
+// Detect returns the first DSPRules entry whose Config.Ext is a subset of the
+// incoming impression Ext and whose Objects, when set, match the impression
+// shape. FormatCodes come from RuleItem.Formats.
 // An empty Ext does not filter, so that rule matches any signal that passes
-// the interstitial check.
+// the interstitial and object checks.
 //
 // Interstitial Exclude + instl skips the rule. Push and Interstitial Include
 // are outputs. No match returns nil.
@@ -33,17 +34,20 @@ func (r *RTBRules) Detect(sig RequestSignal) *Detection {
 	if r == nil {
 		return nil
 	}
-	for _, rule := range r.dspRules() {
+	for _, rule := range r.DSPRules {
 		if rule == nil {
 			continue
 		}
 		if len(rule.Config.Ext) > 0 && !extSubset(rule.Config.Ext, sig.Ext) {
 			continue
 		}
+		if !objectMatch(rule.Condition.Objects, sig) {
+			continue
+		}
 		if rule.Condition.Interstitial == Exclude && sig.Instl {
 			continue
 		}
-		codes := rule.Condition.Formats
+		codes := rule.Formats
 		if len(codes) > 0 {
 			codes = append([]string(nil), codes...)
 		}
@@ -56,6 +60,40 @@ func (r *RTBRules) Detect(sig RequestSignal) *Detection {
 		}
 	}
 	return nil
+}
+
+// objectMatch reports whether sig matches one of objects.
+// An empty objects list does not filter.
+func objectMatch(objects []string, sig RequestSignal) bool {
+	if len(objects) == 0 {
+		return true
+	}
+	bare := !sig.HasBanner && !sig.HasVideo && !sig.HasNative
+	for _, obj := range objects {
+		switch obj {
+		case "banner":
+			if sig.HasBanner {
+				return true
+			}
+		case "video":
+			if sig.HasVideo {
+				return true
+			}
+		case "native":
+			if sig.HasNative {
+				return true
+			}
+		case "interstitial":
+			if sig.Instl && bare {
+				return true
+			}
+		case "none":
+			if bare && !sig.Instl {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // extSubset reports whether every key in need is present in have with an

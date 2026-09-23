@@ -120,6 +120,8 @@ def gen_condition(cond: dict, indent: int) -> str:
         parts.append(f"{inner}Interstitial: {go_aplicable(cond['interstitial'])},")
     if cond.get("push"):
         parts.append(f"{inner}Push: {go_aplicable(cond['push'])},")
+    if cond.get("objects"):
+        parts.append(f"{inner}Objects: {go_string_slice(cond['objects'])},")
 
     if not parts:
         return "rtbrules.Condition{}"
@@ -141,6 +143,15 @@ def gen_rule_config(config: dict, indent: int) -> str | None:
     if no_request_obj:
         parts.append(f"{inner}NoRequestObject: true,")
     return f"rtbrules.RuleConfig{{\n" + "\n".join(parts) + f"\n{tab}}}"
+
+
+def gen_response(resp: dict, indent: int) -> str | None:
+    render = resp.get("render") if resp else None
+    if not render:
+        return None
+    tab = "\t" * indent
+    inner = "\t" * (indent + 1)
+    return f"&rtbrules.ResponseSpec{{\n{inner}Render: {json.dumps(render)},\n{tab}}}"
 
 
 def gen_map_response(mr: dict, indent: int) -> str:
@@ -177,6 +188,9 @@ def gen_rule_item(rule: dict, indent: int) -> str:
         cond_str = gen_condition(rule["condition"], indent + 1)
         lines.append(f"{inner}Condition: {cond_str},")
 
+    if rule.get("formats"):
+        lines.append(f"{inner}Formats: {go_string_slice(rule['formats'])},")
+
     if "config" in rule:
         cfg_str = gen_rule_config(rule["config"], indent + 1)
         if cfg_str:
@@ -185,6 +199,9 @@ def gen_rule_item(rule: dict, indent: int) -> str:
     if "map_response" in rule:
         mr_str = gen_map_response(rule["map_response"], indent + 1)
         lines.append(f"{inner}MapResponse: {mr_str},")
+
+    if resp := gen_response(rule.get("response") or {}, indent + 1):
+        lines.append(f"{inner}Response: {resp},")
 
     lines.append(f"{tab}}},")
     return "\n".join(lines)
@@ -280,7 +297,6 @@ def generate_rules_file(name: str, data: dict) -> str:
     if data.get("push_formats"):
         lines.append(f"\tPushFormats: {go_string_slice(data['push_formats'])},")
 
-    append_rule_list(lines, "Rules", data.get("rules") or [])
     append_rule_list(lines, "SSPRules", data.get("ssp_rules") or [])
     append_rule_list(lines, "DSPRules", data.get("dsp_rules") or [])
 

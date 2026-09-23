@@ -6,7 +6,7 @@
       "modified_at": "2026-08-27T00:00:00Z"
     },
     "formats": ["*"],
-    "rules": [
+    "ssp_rules": [
       {
         "condition": {
           "formats": ["direct"],
@@ -15,6 +15,15 @@
         },
         "config": { "ext": { "type": "pop" } }
       }
+    ],
+    "dsp_rules": [
+      {
+        "condition": {
+          "interstitial": "exclude",
+          "push": "exclude"
+        },
+        "formats": ["direct"],
+        "config": { "ext": { "type": "pop" } }
+      }
     ]
   }
-  

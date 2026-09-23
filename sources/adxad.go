@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var adxad = &adtype.SourceInfo{
-	Name: "AdXAd",
+	Name:        "AdXAd",
 	Description: "AdXAd is a programmatic advertising exchange offering display, native, video, and push inventory with OpenRTB support, real-time bidding, and broad international publisher coverage.",
-	Domain: "www.adxad.com",
-	IconURL: "https://www.adxad.com/favicon.ico",
-	LogoURL: "https://www.adxad.com/images/adxad-logo.svg",
-	URL: "https://www.adxad.com",
-	DSPDomains: []string{"dsp.adxad.com"},
+	Domain:      "www.adxad.com",
+	IconURL:     "https://www.adxad.com/favicon.ico",
+	LogoURL:     "https://www.adxad.com/images/adxad-logo.svg",
+	URL:         "https://www.adxad.com",
+	DSPDomains:  []string{"dsp.adxad.com"},
 }

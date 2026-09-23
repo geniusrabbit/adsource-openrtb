@@ -23,6 +23,9 @@ type Condition struct {
 	Formats      []string  `json:"formats,omitempty"`
 	Interstitial Aplicable `json:"interstitial,omitempty"`
 	Push         Aplicable `json:"push,omitempty"`
+	// Objects restricts DSP Detect to an impression shape. Empty means any shape.
+	// Tokens: banner, video, native, interstitial, none.
+	Objects []string `json:"objects,omitempty"`
 }
 
 func (c *Condition) Matches(format *types.Format, isIntr, isPush bool) bool {
@@ -51,11 +54,20 @@ type RuleConfig struct {
 	NoRequestObject bool           `json:"no_request_object,omitempty"`
 }
 
+// ResponseSpec chooses how a matched DSP rule is written into the bid.
+type ResponseSpec struct {
+	Render string `json:"render,omitempty"`
+}
+
 // RuleItem represents a single rule in the RTBRules set, consisting of a condition, configuration, and optional response mapping.
+// Formats is the DSP result: allowed ad format codes after condition matches.
+// SSP matching still uses Condition.Formats.
 type RuleItem struct {
-	Condition   Condition    `json:"condition"`
-	Config      RuleConfig   `json:"config"`
-	MapResponse *MapResponse `json:"map_response,omitempty"`
+	Condition   Condition     `json:"condition"`
+	Formats     []string      `json:"formats,omitempty"`
+	Config      RuleConfig    `json:"config"`
+	MapResponse *MapResponse  `json:"map_response,omitempty"`
+	Response    *ResponseSpec `json:"response,omitempty"`
 }
 
 // RTBRules defines a set of rules for handling OpenRTB requests.
@@ -66,31 +78,8 @@ type RTBRules struct {
 	Formats             []string    `json:"formats,omitempty"`
 	InterstitialFormats []string    `json:"interstitial_formats,omitempty"`
 	PushFormats         []string    `json:"push_formats,omitempty"`
-	Rules               []*RuleItem `json:"rules,omitempty"`
 	SSPRules            []*RuleItem `json:"ssp_rules,omitempty"`
 	DSPRules            []*RuleItem `json:"dsp_rules,omitempty"`
-}
-
-// sspRules is the outbound list. A non-empty ssp_rules replaces rules.
-func (r *RTBRules) sspRules() []*RuleItem {
-	if r == nil {
-		return nil
-	}
-	if len(r.SSPRules) > 0 {
-		return r.SSPRules
-	}
-	return r.Rules
-}
-
-// dspRules is the ingress list. A non-empty dsp_rules replaces rules.
-func (r *RTBRules) dspRules() []*RuleItem {
-	if r == nil {
-		return nil
-	}
-	if len(r.DSPRules) > 0 {
-		return r.DSPRules
-	}
-	return r.Rules
 }
 
 // containsFormat reports whether the format list accepts the given codename.
@@ -122,7 +111,7 @@ func (r *RTBRules) HasMappingRules() bool {
 	if r == nil {
 		return false
 	}
-	for _, rule := range r.sspRules() {
+	for _, rule := range r.SSPRules {
 		if rule.MapResponse != nil && rule.MapResponse.HasAssets() {
 			return true
 		}
@@ -135,7 +124,7 @@ func (r *RTBRules) ApplyRules(format *types.Format, isIntr, isPush bool, fn func
 	if r == nil {
 		return nil
 	}
-	for _, rule := range r.sspRules() {
+	for _, rule := range r.SSPRules {
 		if rule.Condition.Matches(format, isIntr, isPush) {
 			if err := fn(rule); err != nil {
 				return err
@@ -151,7 +140,7 @@ func (r *RTBRules) NoRequestObject(format *types.Format, isIntr, isPush bool) bo
 	if r == nil {
 		return false
 	}
-	for _, rule := range r.sspRules() {
+	for _, rule := range r.SSPRules {
 		if rule.Condition.Matches(format, isIntr, isPush) {
 			return rule.Config.NoRequestObject
 		}
@@ -164,7 +153,7 @@ func (r *RTBRules) AdjustImpression(target TargetImpression, imp *adtype.Impress
 	if r == nil {
 		return nil
 	}
-	for _, rule := range r.sspRules() {
+	for _, rule := range r.SSPRules {
 		if rule.Condition.Matches(format, imp.IsInterstitial(), imp.IsPush()) {
 			target.SetExt(rule.Config.Ext)
 		}

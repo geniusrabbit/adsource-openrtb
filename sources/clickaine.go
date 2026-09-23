@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var clickaine = &adtype.SourceInfo{
-	Name: "Clickaine",
+	Name:        "Clickaine",
 	Description: "Clickaine is a self-serve pop and push advertising network providing high-volume popunder and push notification traffic with real-time bidding, geo targeting, and performance optimization tools.",
-	Domain: "www.clickaine.com",
-	IconURL: "https://www.clickaine.com/favicon.ico",
-	LogoURL: "https://www.clickaine.com/images/clickaine-logo.svg",
-	URL: "https://www.clickaine.com",
-	DSPDomains: []string{"rtb.clickaine.com"},
+	Domain:      "www.clickaine.com",
+	IconURL:     "https://www.clickaine.com/favicon.ico",
+	LogoURL:     "https://www.clickaine.com/images/clickaine-logo.svg",
+	URL:         "https://www.clickaine.com",
+	DSPDomains:  []string{"rtb.clickaine.com"},
 }

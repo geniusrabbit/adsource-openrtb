@@ -20,7 +20,7 @@ var twinred = &rtbrules.RTBRules{
 		},
 	},
 	Formats:             []string{"direct", "proxy", "video", "proxy_300x250", "proxy_300x100", "proxy_728x90", "banner_300x250", "banner_300x100", "banner_728x90"},
-	InterstitialFormats: []string{"proxy"},
+	InterstitialFormats: []string{"direct"},
 	SSPRules: []*rtbrules.RuleItem{
 		{
 			Condition: rtbrules.Condition{
@@ -62,9 +62,35 @@ var twinred = &rtbrules.RTBRules{
 	DSPRules: []*rtbrules.RuleItem{
 		{
 			Condition: rtbrules.Condition{
-				Formats:      []string{"direct"},
 				Interstitial: rtbrules.Exclude,
 				Push:         rtbrules.Exclude,
+				Objects:      []string{"banner"},
+			},
+			Formats: []string{"proxy_300x250", "proxy_300x100", "proxy_728x90", "banner_300x250", "banner_300x100", "banner_728x90"},
+		},
+		{
+			Condition: rtbrules.Condition{
+				Objects: []string{"video"},
+			},
+			Formats: []string{"video"},
+		},
+		{
+			Condition: rtbrules.Condition{
+				Interstitial: rtbrules.Include,
+				Push:         rtbrules.Exclude,
+				Objects:      []string{"interstitial"},
+			},
+			Formats: []string{"direct"},
+		},
+		{
+			Condition: rtbrules.Condition{
+				Interstitial: rtbrules.Exclude,
+				Push:         rtbrules.Exclude,
+				Objects:      []string{"none"},
+			},
+			Formats: []string{"direct"},
+			Response: &rtbrules.ResponseSpec{
+				Render: "rawURL",
 			},
 		},
 	},

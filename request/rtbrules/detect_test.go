@@ -14,10 +14,9 @@ func TestRTBRules_Detect_NilReceiver(t *testing.T) {
 
 func TestRTBRules_Detect_EmptyExtMatches(t *testing.T) {
 	r := &RTBRules{
-		Rules: []*RuleItem{
+		DSPRules: []*RuleItem{
 			{
-				Condition: Condition{Formats: []string{"native"}},
-				Config:    RuleConfig{},
+				Formats: []string{"native"},
 			},
 		},
 	}
@@ -29,9 +28,10 @@ func TestRTBRules_Detect_EmptyExtMatches(t *testing.T) {
 
 func TestRTBRules_Detect_ExtSubsetNumeric(t *testing.T) {
 	r := &RTBRules{
-		Rules: []*RuleItem{
+		DSPRules: []*RuleItem{
 			{
-				Condition: Condition{Formats: []string{"direct"}, Interstitial: Exclude, Push: Exclude},
+				Condition: Condition{Interstitial: Exclude, Push: Exclude},
+				Formats:   []string{"direct"},
 				Config:    RuleConfig{Ext: map[string]any{"format": 4}},
 			},
 		},
@@ -58,13 +58,15 @@ func TestRTBRules_Detect_ExtSubsetNumeric(t *testing.T) {
 
 func TestRTBRules_Detect_InterstitialExcludeSkips(t *testing.T) {
 	r := &RTBRules{
-		Rules: []*RuleItem{
+		DSPRules: []*RuleItem{
 			{
-				Condition: Condition{Formats: []string{"banner_300x250"}, Interstitial: Exclude},
+				Condition: Condition{Interstitial: Exclude},
+				Formats:   []string{"banner_300x250"},
 				Config:    RuleConfig{Ext: map[string]any{"format": 1}},
 			},
 			{
-				Condition: Condition{Formats: []string{"proxy"}, Interstitial: Include},
+				Condition: Condition{Interstitial: Include},
+				Formats:   []string{"proxy"},
 				Config:    RuleConfig{Ext: map[string]any{"format": 5}},
 			},
 		},
@@ -86,9 +88,10 @@ func TestRTBRules_Detect_InterstitialExcludeSkips(t *testing.T) {
 
 func TestRTBRules_Detect_PushAndNoRequestObject(t *testing.T) {
 	r := &RTBRules{
-		Rules: []*RuleItem{
+		DSPRules: []*RuleItem{
 			{
-				Condition: Condition{Formats: []string{"native"}, Push: Include, Interstitial: Exclude},
+				Condition: Condition{Push: Include, Interstitial: Exclude},
+				Formats:   []string{"native"},
 				Config:    RuleConfig{Ext: map[string]any{"type": "webpush"}, NoRequestObject: true},
 			},
 		},
@@ -107,10 +110,10 @@ func TestRTBRules_Detect_PushAndNoRequestObject(t *testing.T) {
 
 func TestRTBRules_Detect_NoMatch(t *testing.T) {
 	r := &RTBRules{
-		Rules: []*RuleItem{
+		DSPRules: []*RuleItem{
 			{
-				Condition: Condition{Formats: []string{"direct"}},
-				Config:    RuleConfig{Ext: map[string]any{"type": "pop"}},
+				Formats: []string{"direct"},
+				Config:  RuleConfig{Ext: map[string]any{"type": "pop"}},
 			},
 		},
 	}

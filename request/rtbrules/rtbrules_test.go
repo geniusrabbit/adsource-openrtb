@@ -172,7 +172,7 @@ func TestRTBRules_IsPushSupport(t *testing.T) {
 func TestRTBRules_AdjustImpression_MatchingRule(t *testing.T) {
 	ext := map[string]any{"type": "webpush"}
 	r := &RTBRules{
-		Rules: []*RuleItem{
+		SSPRules: []*RuleItem{
 			{
 				Condition: Condition{
 					Formats: []string{"native"},
@@ -197,7 +197,7 @@ func TestRTBRules_AdjustImpression_MatchingRule(t *testing.T) {
 
 func TestRTBRules_AdjustImpression_NoMatch(t *testing.T) {
 	r := &RTBRules{
-		Rules: []*RuleItem{
+		SSPRules: []*RuleItem{
 			{
 				Condition: Condition{Formats: []string{"native"}, Push: Include},
 				Config:    RuleConfig{Ext: map[string]any{"type": "webpush"}},
@@ -215,12 +215,18 @@ func TestRTBRules_AdjustImpression_NoMatch(t *testing.T) {
 	}
 }
 
-func TestRTBRules_RulesFallback(t *testing.T) {
+func TestRTBRules_DirectionalLists(t *testing.T) {
 	r := &RTBRules{
-		Rules: []*RuleItem{
+		SSPRules: []*RuleItem{
 			{
 				Condition: Condition{Formats: []string{"direct"}},
 				Config:    RuleConfig{Ext: map[string]any{"type": "pop"}},
+			},
+		},
+		DSPRules: []*RuleItem{
+			{
+				Formats: []string{"direct"},
+				Config:  RuleConfig{Ext: map[string]any{"type": "pop"}},
 			},
 		},
 	}

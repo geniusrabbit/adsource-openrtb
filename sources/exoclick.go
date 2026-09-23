@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var exoclick = &adtype.SourceInfo{
-	Name: "ExoClick",
+	Name:        "ExoClick",
 	Description: "ExoClick is a leading programmatic advertising platform and ad network for mainstream and adult publishers, offering banner, video, native, push, and popunder formats with OpenRTB support.",
-	Domain: "www.exoclick.com",
-	IconURL: "https://www.exoclick.com/favicon.ico",
-	LogoURL: "https://www.exoclick.com/images/exoclick-logo.svg",
-	URL: "https://www.exoclick.com",
-	DSPDomains: []string{"syndication.exoclick.com"},
+	Domain:      "www.exoclick.com",
+	IconURL:     "https://www.exoclick.com/favicon.ico",
+	LogoURL:     "https://www.exoclick.com/images/exoclick-logo.svg",
+	URL:         "https://www.exoclick.com",
+	DSPDomains:  []string{"syndication.exoclick.com"},
 }

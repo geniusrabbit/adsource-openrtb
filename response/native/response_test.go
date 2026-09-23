@@ -48,7 +48,7 @@ const trafficStarsWinURL = "https://pxl.tsyndicate.com/api/v1/win?"
 func trafficStarsRules() *rtbrules.RTBRules {
 	return &rtbrules.RTBRules{
 		PushFormats: []string{"native"},
-		Rules: []*rtbrules.RuleItem{
+		SSPRules: []*rtbrules.RuleItem{
 			{
 				Condition: rtbrules.Condition{
 					Formats:      []string{"native"},
@@ -219,7 +219,7 @@ func TestNew_StandardNative_WrappedMarkup(t *testing.T) {
 func TestNew_StandardNative_RulesWithoutMapResponse(t *testing.T) {
 	// Rules present but no MapResponse → standard decode must run.
 	rulesNoMap := &rtbrules.RTBRules{
-		Rules: []*rtbrules.RuleItem{
+		SSPRules: []*rtbrules.RuleItem{
 			{
 				Condition: rtbrules.Condition{Formats: []string{"native"}},
 				Config:    rtbrules.RuleConfig{Ext: map[string]any{"k": "v"}},

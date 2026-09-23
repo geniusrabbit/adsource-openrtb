@@ -22,7 +22,7 @@
     "banner_300x100",
     "banner_728x90"
   ],
-  "interstitial_formats": ["proxy"],
+  "interstitial_formats": ["direct"],
   "ssp_rules": [
     {
       "condition": {
@@ -59,9 +59,42 @@
   "dsp_rules": [
     {
       "condition": {
-        "formats": ["direct"],
         "interstitial": "exclude",
-        "push": "exclude"
+        "push": "exclude",
+        "objects": ["banner"]
+      },
+      "formats": [
+        "proxy_300x250",
+        "proxy_300x100",
+        "proxy_728x90",
+        "banner_300x250",
+        "banner_300x100",
+        "banner_728x90"
+      ]
+    },
+    {
+      "condition": {
+        "objects": ["video"]
+      },
+      "formats": ["video"]
+    },
+    {
+      "condition": {
+        "interstitial": "include",
+        "push": "exclude",
+        "objects": ["interstitial"]
+      },
+      "formats": ["direct"]
+    },
+    {
+      "condition": {
+        "interstitial": "exclude",
+        "push": "exclude",
+        "objects": ["none"]
+      },
+      "formats": ["direct"],
+      "response": {
+        "render": "rawURL"
       }
     }
   ]

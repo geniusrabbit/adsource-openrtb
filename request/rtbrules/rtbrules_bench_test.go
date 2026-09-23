@@ -20,7 +20,7 @@ var (
 		Formats:             []string{"banner", "native", "video"},
 		InterstitialFormats: []string{"proxy", "banner"},
 		PushFormats:         []string{"native"},
-		Rules: []*RuleItem{
+		SSPRules: []*RuleItem{
 			{
 				Condition: Condition{
 					Formats: []string{"proxy"},

@@ -27,19 +27,28 @@ func TestByName(t *testing.T) {
 
 func TestDetect_TwinRed(t *testing.T) {
 	r := Rules["twinred"]
-	for _, ext := range []map[string]any{
-		{"format": float64(4)},
-		{"format": float64(1)},
-		{"format": float64(5)},
-		nil,
-	} {
-		got := r.Detect(rtbrules.RequestSignal{Ext: ext})
-		if got == nil || got.Interstitial || !slices.Equal(got.FormatCodes, []string{"direct"}) {
-			t.Fatalf("ext=%v: %+v", ext, got)
-		}
+	wantBanner := []string{
+		"proxy_300x250", "proxy_300x100", "proxy_728x90",
+		"banner_300x250", "banner_300x100", "banner_728x90",
 	}
-	if got := r.Detect(rtbrules.RequestSignal{Instl: true, Ext: map[string]any{"format": float64(5)}}); got != nil {
-		t.Fatalf("interstitial: %+v", got)
+	direct := r.Detect(rtbrules.RequestSignal{})
+	if direct == nil || direct.Interstitial || !slices.Equal(direct.FormatCodes, []string{"direct"}) {
+		t.Fatalf("popunder: %+v", direct)
+	}
+	if direct.Rule == nil || direct.Rule.Response == nil || direct.Rule.Response.Render != "rawURL" {
+		t.Fatalf("popunder render: %+v", direct.Rule)
+	}
+	banner := r.Detect(rtbrules.RequestSignal{HasBanner: true, Ext: map[string]any{"format": float64(1)}})
+	if banner == nil || !slices.Equal(banner.FormatCodes, wantBanner) {
+		t.Fatalf("banner: %+v", banner)
+	}
+	video := r.Detect(rtbrules.RequestSignal{HasVideo: true})
+	if video == nil || !slices.Equal(video.FormatCodes, []string{"video"}) {
+		t.Fatalf("video: %+v", video)
+	}
+	instl := r.Detect(rtbrules.RequestSignal{Instl: true, Ext: map[string]any{"format": float64(5)}})
+	if instl == nil || !instl.Interstitial || !slices.Equal(instl.FormatCodes, []string{"proxy"}) {
+		t.Fatalf("interstitial: %+v", instl)
 	}
 }
 

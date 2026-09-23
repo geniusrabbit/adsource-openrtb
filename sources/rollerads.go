@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var rollerads = &adtype.SourceInfo{
-	Name: "RollerAds",
+	Name:        "RollerAds",
 	Description: "RollerAds is a push notification and popunder advertising network offering global traffic with self-serve platform, CPC/CPM pricing, and granular targeting by geo, device, OS, and browser.",
-	Domain: "www.rollerads.com",
-	IconURL: "https://www.rollerads.com/favicon.ico",
-	LogoURL: "https://www.rollerads.com/images/rollerads-logo.svg",
-	URL: "https://www.rollerads.com",
-	DSPDomains: []string{"rtb.rollerads.com"},
+	Domain:      "www.rollerads.com",
+	IconURL:     "https://www.rollerads.com/favicon.ico",
+	LogoURL:     "https://www.rollerads.com/images/rollerads-logo.svg",
+	URL:         "https://www.rollerads.com",
+	DSPDomains:  []string{"rtb.rollerads.com"},
 }

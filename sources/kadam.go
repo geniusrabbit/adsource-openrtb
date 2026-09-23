@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var kadam = &adtype.SourceInfo{
-	Name: "Kadam",
+	Name:        "Kadam",
 	Description: "Kadam is a CPC/CPM advertising network offering native ads, push notifications, banners, and teasers with advanced targeting including interests, geo, device, and retargeting across a broad publisher network.",
-	Domain: "www.kadam.net",
-	IconURL: "https://www.kadam.net/favicon.ico",
-	LogoURL: "https://www.kadam.net/images/kadam-logo.svg",
-	URL: "https://www.kadam.net",
-	DSPDomains: []string{"rtb.kadam.net"},
+	Domain:      "www.kadam.net",
+	IconURL:     "https://www.kadam.net/favicon.ico",
+	LogoURL:     "https://www.kadam.net/images/kadam-logo.svg",
+	URL:         "https://www.kadam.net",
+	DSPDomains:  []string{"rtb.kadam.net"},
 }

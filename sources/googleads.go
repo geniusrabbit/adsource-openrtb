@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var googleads = &adtype.SourceInfo{
-	Name: "Google Ads",
+	Name:        "Google Ads",
 	Description: "Google's online advertising platform and the largest digital advertising network, offering search, display, video, and programmatic inventory across Google properties and the GDN.",
-	Domain: "ads.google.com",
-	IconURL: "https://www.google.com/favicon.ico",
-	LogoURL: "https://www.gstatic.com/images/branding/googlelogo/svg/googlelogo_clr_74x24px.svg",
-	URL: "https://ads.google.com",
-	DSPDomains: []string{"cm.g.doubleclick.net", "googleads.g.doubleclick.net"},
+	Domain:      "ads.google.com",
+	IconURL:     "https://www.google.com/favicon.ico",
+	LogoURL:     "https://www.gstatic.com/images/branding/googlelogo/svg/googlelogo_clr_74x24px.svg",
+	URL:         "https://ads.google.com",
+	DSPDomains:  []string{"cm.g.doubleclick.net", "googleads.g.doubleclick.net"},
 }

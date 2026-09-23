@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var yahooads = &adtype.SourceInfo{
-	Name: "Yahoo Ads",
+	Name:        "Yahoo Ads",
 	Description: "Yahoo's demand-side platform (DSP) delivering programmatic display, native, video, and mobile advertising across Yahoo properties and premium publisher inventory worldwide.",
-	Domain: "ads.yahoo.com",
-	IconURL: "https://s.yimg.com/rz/l/favicon.ico",
-	LogoURL: "https://s.yimg.com/ny/api/res/1.2/pf_AUE2AWUl8jxEjdqE4g--~A/YXBwaWQ9aGlnaGxhbmRlcjt3PTY0MA--/https://s.yimg.com/os/creatr-uploaded-images/2023-11/yahoo-logo.png",
-	URL: "https://ads.yahoo.com",
-	DSPDomains: []string{"c2shb.ssp.yahoo.com"},
+	Domain:      "ads.yahoo.com",
+	IconURL:     "https://s.yimg.com/rz/l/favicon.ico",
+	LogoURL:     "https://s.yimg.com/ny/api/res/1.2/pf_AUE2AWUl8jxEjdqE4g--~A/YXBwaWQ9aGlnaGxhbmRlcjt3PTY0MA--/https://s.yimg.com/os/creatr-uploaded-images/2023-11/yahoo-logo.png",
+	URL:         "https://ads.yahoo.com",
+	DSPDomains:  []string{"c2shb.ssp.yahoo.com"},
 }

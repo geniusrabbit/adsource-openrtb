@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var yandexads = &adtype.SourceInfo{
-	Name: "Yandex Ads",
+	Name:        "Yandex Ads",
 	Description: "Yandex's advertising network and DSP offering contextual, display, video, and programmatic inventory across Yandex services and the Yandex Advertising Network (YAN) of partner sites.",
-	Domain: "ads.yandex.com",
-	IconURL: "https://yandex.com/favicon.ico",
-	LogoURL: "https://yastatic.net/s3/home-static/_/5x/Y_fa_W_YtdpCkzCHQ7ZoqFgS1Eo.png",
-	URL: "https://ads.yandex.com",
-	DSPDomains: []string{"bs.yandex.ru"},
+	Domain:      "ads.yandex.com",
+	IconURL:     "https://yandex.com/favicon.ico",
+	LogoURL:     "https://yastatic.net/s3/home-static/_/5x/Y_fa_W_YtdpCkzCHQ7ZoqFgS1Eo.png",
+	URL:         "https://ads.yandex.com",
+	DSPDomains:  []string{"bs.yandex.ru"},
 }

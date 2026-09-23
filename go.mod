@@ -7,8 +7,8 @@ require (
 	github.com/bsm/openrtb/v3 v3.2.1
 	github.com/demdxx/gocast/v2 v2.12.2
 	github.com/demdxx/xtypes v0.3.1
-	github.com/geniusrabbit/adcorelib v0.0.0-20260923122157-16baa490c371
-	github.com/geniusrabbit/udetect v0.0.0-20260922091050-7e60adce28e2
+	github.com/geniusrabbit/adcorelib v0.0.0-20260923191310-277150b682ca
+	github.com/geniusrabbit/udetect v0.0.0-20260923122328-4f00d3f84f4c
 	github.com/haxqer/vast v0.0.0-20260715164143-32c7a53a75b7
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1

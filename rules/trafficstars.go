@@ -22,7 +22,7 @@ var trafficstars = &rtbrules.RTBRules{
 	Formats:             []string{"direct", "native", "video", "banner_300x250", "banner_300x100", "banner_315x300", "banner_900x250", "banner_728x90", "banner_250x150", "banner_305x99", "proxy", "proxy_300x250", "proxy_300x100", "proxy_315x300", "proxy_900x250", "proxy_728x90", "proxy_250x150", "proxy_305x99"},
 	InterstitialFormats: []string{"proxy"},
 	PushFormats:         []string{"native"},
-	Rules: []*rtbrules.RuleItem{
+	SSPRules: []*rtbrules.RuleItem{
 		{
 			Condition: rtbrules.Condition{
 				Formats:      []string{"native"},
@@ -52,6 +52,43 @@ var trafficstars = &rtbrules.RTBRules{
 				Interstitial: rtbrules.Exclude,
 				Push:         rtbrules.Exclude,
 			},
+			Config: rtbrules.RuleConfig{
+				Ext: map[string]any{
+					"type": "pop",
+				},
+			},
+		},
+	},
+	DSPRules: []*rtbrules.RuleItem{
+		{
+			Condition: rtbrules.Condition{
+				Interstitial: rtbrules.Exclude,
+				Push:         rtbrules.Include,
+			},
+			Formats: []string{"native"},
+			Config: rtbrules.RuleConfig{
+				Ext: map[string]any{
+					"type": "webpush",
+				},
+				NoRequestObject: true,
+			},
+			MapResponse: &rtbrules.MapResponse{
+				Assets: []rtbrules.MapResponseAsset{
+					{ID: 0, Name: "id", Field: "id"},
+					{ID: 1, Name: "main", Field: "image"},
+					{ID: 2, Name: "logo", Field: "icon"},
+					{ID: 101, Name: "title", Field: "title"},
+					{ID: 102, Name: "description", Field: "content"},
+					{ID: 105, Name: "url", Field: "url"},
+				},
+			},
+		},
+		{
+			Condition: rtbrules.Condition{
+				Interstitial: rtbrules.Exclude,
+				Push:         rtbrules.Exclude,
+			},
+			Formats: []string{"direct"},
 			Config: rtbrules.RuleConfig{
 				Ext: map[string]any{
 					"type": "pop",

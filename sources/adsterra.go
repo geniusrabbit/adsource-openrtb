@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var adsterra = &adtype.SourceInfo{
-	Name: "Adsterra",
+	Name:        "Adsterra",
 	Description: "Adsterra is a performance-driven advertising network offering popunder, native, display banner, push, and video formats with broad global coverage and anti-fraud protection.",
-	Domain: "www.adsterra.com",
-	IconURL: "https://www.adsterra.com/favicon.ico",
-	LogoURL: "https://www.adsterra.com/images/adsterra-logo.svg",
-	URL: "https://www.adsterra.com",
-	DSPDomains: []string{"dsp.adsterra.com"},
+	Domain:      "www.adsterra.com",
+	IconURL:     "https://www.adsterra.com/favicon.ico",
+	LogoURL:     "https://www.adsterra.com/images/adsterra-logo.svg",
+	URL:         "https://www.adsterra.com",
+	DSPDomains:  []string{"dsp.adsterra.com"},
 }

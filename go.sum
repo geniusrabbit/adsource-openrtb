@@ -24,8 +24,8 @@ github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHk
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.10.1 h1:b0/UzAf9yR5rhf3RPm9gf3ehBPpf0oZKIjtpKrx59Ho=
 github.com/fsnotify/fsnotify v1.10.1/go.mod h1:TLheqan6HD6GBK6PrDWyDPBaEV8LspOxvPSjC+bVfgo=
-github.com/geniusrabbit/adcorelib v0.0.0-20260923122157-16baa490c371 h1:7mfLs6WAPj7VCovgZyVHdab9L0VEN8ZfUpBzfYXZ44s=
-github.com/geniusrabbit/adcorelib v0.0.0-20260923122157-16baa490c371/go.mod h1:8GLEvR7NFFITDa+F51IMDAy8X6x16fiCfwJPQlnKCkM=
+github.com/geniusrabbit/adcorelib v0.0.0-20260923191310-277150b682ca h1:kQI31eqxRMCSrHzLfjiM4EOIowZIJgDHwIbcqgkOLso=
+github.com/geniusrabbit/adcorelib v0.0.0-20260923191310-277150b682ca/go.mod h1:8GLEvR7NFFITDa+F51IMDAy8X6x16fiCfwJPQlnKCkM=
 github.com/geniusrabbit/gogeo v1.1.0 h1:02g8j2zLwX4eK9yqnPuAR1OClZFetaj78mRTCs79d4Y=
 github.com/geniusrabbit/gogeo v1.1.0/go.mod h1:SO7efiKnlpC/PxX5OfxM5PFTCbypoA0UhFBPbjR8dc4=
 github.com/geniusrabbit/gosql/v2 v2.3.2 h1:dZTIEZ2JcnYG/uExZwWRMxpahblnN/PpyfPTva9Wz8w=
@@ -34,8 +34,8 @@ github.com/geniusrabbit/hourstable v1.0.0 h1:EUCWRTUaL5w4UdT5JbWQuAojClxoJ8iWMjo
 github.com/geniusrabbit/hourstable v1.0.0/go.mod h1:+48Ixd29rHlMofwXJzuMgtOUs9QwTOMykFs2fDgujak=
 github.com/geniusrabbit/notificationcenter/v2 v2.5.0 h1:n51meoNN5WW8VnWXF+gdwQxJSiWkKKcnRSrcnuAPgF0=
 github.com/geniusrabbit/notificationcenter/v2 v2.5.0/go.mod h1:hBoJzRKoytMCLX+VnbRXJlkWuNwb4WLRbSc5iUCgDGQ=
-github.com/geniusrabbit/udetect v0.0.0-20260922091050-7e60adce28e2 h1:YYcIDPxeNrRgh6S9W4WlJYuTgGDnGp9i1MWpW7pvqwA=
-github.com/geniusrabbit/udetect v0.0.0-20260922091050-7e60adce28e2/go.mod h1:+Mf8w+8g4GzqeK01k+JK+aLjwZeyBbUlM0Vn8opMvb0=
+github.com/geniusrabbit/udetect v0.0.0-20260923122328-4f00d3f84f4c h1:A22okCF0eMhkd4zvN8Mb8aLIFm1UJfyGha4fR5FFzMA=
+github.com/geniusrabbit/udetect v0.0.0-20260923122328-4f00d3f84f4c/go.mod h1:+Mf8w+8g4GzqeK01k+JK+aLjwZeyBbUlM0Vn8opMvb0=
 github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=

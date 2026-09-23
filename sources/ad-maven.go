@@ -5,11 +5,11 @@ package sources
 import "github.com/geniusrabbit/adcorelib/adtype"
 
 var adMaven = &adtype.SourceInfo{
-	Name: "Ad-Maven",
+	Name:        "Ad-Maven",
 	Description: "Ad-Maven is a global ad network and SSP specializing in popunder, push notification, banner, and interstitial formats, serving billions of impressions monthly with OpenRTB programmatic buying support.",
-	Domain: "www.ad-maven.com",
-	IconURL: "https://www.ad-maven.com/favicon.ico",
-	LogoURL: "https://www.ad-maven.com/images/ad-maven-logo.svg",
-	URL: "https://www.ad-maven.com",
-	DSPDomains: []string{"rtb.ad-maven.com"},
+	Domain:      "www.ad-maven.com",
+	IconURL:     "https://www.ad-maven.com/favicon.ico",
+	LogoURL:     "https://www.ad-maven.com/images/ad-maven-logo.svg",
+	URL:         "https://www.ad-maven.com",
+	DSPDomains:  []string{"rtb.ad-maven.com"},
 }
