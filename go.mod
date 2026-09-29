@@ -1,6 +1,6 @@
 module github.com/geniusrabbit/adsource-openrtb
 
-go 1.26.0
+go 1.27
 
 require (
 	github.com/bsm/openrtb v2.1.2+incompatible
@@ -8,7 +8,7 @@ require (
 	github.com/demdxx/gocast/v2 v2.12.2
 	github.com/demdxx/xtypes v0.3.1
 	github.com/geniusrabbit/adcorelib v0.0.0-20260923191310-277150b682ca
-	github.com/geniusrabbit/udetect v0.0.0-20260923122328-4f00d3f84f4c
+	github.com/geniusrabbit/udetect v0.0.0-20260929155810-44fa1aa74d86
 	github.com/haxqer/vast v0.0.0-20260715164143-32c7a53a75b7
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1
@@ -25,11 +25,11 @@ require (
 	github.com/geniusrabbit/hourstable v1.0.0 // indirect
 	github.com/geniusrabbit/notificationcenter/v2 v2.5.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.31.0 // indirect
 	github.com/guregu/null v4.0.0+incompatible // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/klauspost/compress v1.20.0 // indirect
+	github.com/klauspost/compress v1.20.1 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/molecule-man/go-brrr v1.1.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
@@ -37,8 +37,9 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/prometheus/client_golang v1.24.1 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
-	github.com/prometheus/common v0.71.0 // indirect
+	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/procfs v0.22.0 // indirect
+	github.com/rtb-0/rtbdict v0.0.0-20260929120202-eff2f129e380 // indirect
 	github.com/segmentio/ksuid v1.0.4 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
@@ -50,8 +51,8 @@ require (
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20260921155816-b14227669459 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260921155816-b14227669459 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc // indirect
 	google.golang.org/grpc v1.84.0 // indirect
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.6.2 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect

@@ -308,22 +308,21 @@ func uopenrtbOpenrtbV3SiteFrom(s *udetect.Site) *openrtb.Site {
 	if s == nil {
 		return nil
 	}
-	cats := make([]openrtb.ContentCategory, 0, len(s.Cat))
-	for _, ct := range s.Cat {
+	codes := s.Content10Codes()
+	cats := make([]openrtb.ContentCategory, 0, len(codes))
+	for _, ct := range codes {
 		cats = append(cats, openrtb.ContentCategory(ct))
 	}
 	return &openrtb.Site{
-		Inventory: openrtb.Inventory{
-			ID:            s.ExtID,
-			Keywords:      s.Keywords,
-			Categories:    cats,
-			Domain:        s.Domain,
-			PrivacyPolicy: intRef(s.PrivacyPolicy),
-		},
-		Page:     s.Page,
-		Referrer: s.Referrer,
-		Search:   s.Search,
-		Mobile:   s.Mobile,
+		ID:            s.ExtID,
+		Keywords:      s.Keywords,
+		Categories:    cats,
+		Domain:        s.Domain,
+		PrivacyPolicy: new(s.PrivacyPolicy),
+		Page:          s.Page,
+		Referrer:      s.Referrer,
+		Search:        s.Search,
+		Mobile:        s.Mobile,
 	}
 }
 
@@ -331,21 +330,20 @@ func uopenrtbOpenrtbV3ApplicationFrom(a *udetect.App) *openrtb.App {
 	if a == nil {
 		return nil
 	}
-	cats := make([]openrtb.ContentCategory, 0, len(a.Cat))
-	for _, ct := range a.Cat {
+	codes := a.Content10Codes()
+	cats := make([]openrtb.ContentCategory, 0, len(codes))
+	for _, ct := range codes {
 		cats = append(cats, openrtb.ContentCategory(ct))
 	}
 	return &openrtb.App{
-		Inventory: openrtb.Inventory{
-			ID:            a.ExtID,
-			Keywords:      a.Keywords,
-			Categories:    cats,
-			PrivacyPolicy: intRef(a.PrivacyPolicy),
-		},
-		Bundle:   a.Bundle,
-		StoreURL: a.StoreURL,
-		Version:  a.Ver,
-		Paid:     a.Paid,
+		ID:            a.ExtID,
+		Keywords:      a.Keywords,
+		Categories:    cats,
+		PrivacyPolicy: new(a.PrivacyPolicy),
+		Bundle:        a.Bundle,
+		StoreURL:      a.StoreURL,
+		Version:       a.Ver,
+		Paid:          a.Paid,
 	}
 }
 
@@ -496,5 +494,3 @@ func b2i(b bool) int {
 	}
 	return 0
 }
-
-func intRef(v int) *int { return &v }

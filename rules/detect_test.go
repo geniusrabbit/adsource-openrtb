@@ -47,7 +47,7 @@ func TestDetect_TwinRed(t *testing.T) {
 		t.Fatalf("video: %+v", video)
 	}
 	instl := r.Detect(rtbrules.RequestSignal{Instl: true, Ext: map[string]any{"format": float64(5)}})
-	if instl == nil || !instl.Interstitial || !slices.Equal(instl.FormatCodes, []string{"proxy"}) {
+	if instl == nil || !instl.Interstitial || !slices.Equal(instl.FormatCodes, []string{"direct"}) {
 		t.Fatalf("interstitial: %+v", instl)
 	}
 }
