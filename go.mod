@@ -7,8 +7,8 @@ require (
 	github.com/bsm/openrtb/v3 v3.2.1
 	github.com/demdxx/gocast/v2 v2.12.2
 	github.com/demdxx/xtypes v0.3.1
-	github.com/geniusrabbit/adcorelib v0.0.0-20260923191310-277150b682ca
-	github.com/geniusrabbit/udetect v0.0.0-20260929155810-44fa1aa74d86
+	github.com/geniusrabbit/adcorelib v0.0.0-20260930091734-120b1d13b424
+	github.com/geniusrabbit/udetect v0.0.0-20260930085427-fd156a2b914c
 	github.com/haxqer/vast v0.0.0-20260715164143-32c7a53a75b7
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1
@@ -39,7 +39,7 @@ require (
 	github.com/prometheus/client_model v0.6.3 // indirect
 	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/procfs v0.22.0 // indirect
-	github.com/rtb-0/rtbdict v0.0.0-20260929120202-eff2f129e380 // indirect
+	github.com/rtb-0/rtbdict v0.0.0-20260930080334-2cd28f6a6de9 // indirect
 	github.com/segmentio/ksuid v1.0.4 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
