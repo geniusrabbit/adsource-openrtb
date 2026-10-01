@@ -7,8 +7,8 @@ require (
 	github.com/bsm/openrtb/v3 v3.2.1
 	github.com/demdxx/gocast/v2 v2.12.2
 	github.com/demdxx/xtypes v0.3.1
-	github.com/geniusrabbit/adcorelib v0.0.0-20260930091734-120b1d13b424
-	github.com/geniusrabbit/udetect v0.0.0-20260930085427-fd156a2b914c
+	github.com/geniusrabbit/adcorelib v0.0.0-20261001131007-e32a7b742ef0
+	github.com/geniusrabbit/udetect v0.0.0-20261001130658-d7490319208d
 	github.com/haxqer/vast v0.0.0-20260715164143-32c7a53a75b7
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1
@@ -20,7 +20,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bkaradzic/go-lz4 v1.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/geniusrabbit/gogeo v1.1.0 // indirect
+	github.com/geniusrabbit/gogeo v1.1.1 // indirect
 	github.com/geniusrabbit/gosql/v2 v2.3.2 // indirect
 	github.com/geniusrabbit/hourstable v1.0.0 // indirect
 	github.com/geniusrabbit/notificationcenter/v2 v2.5.0 // indirect

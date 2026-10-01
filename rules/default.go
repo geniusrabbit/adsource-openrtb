@@ -42,6 +42,9 @@ var defaultRules = &rtbrules.RTBRules{
 					"type": "pop",
 				},
 			},
+			Response: &rtbrules.ResponseSpec{
+				Render: "rawURL",
+			},
 		},
 	},
 }

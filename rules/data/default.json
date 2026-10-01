@@ -23,7 +23,10 @@
           "push": "exclude"
         },
         "formats": ["direct"],
-        "config": { "ext": { "type": "pop" } }
+        "config": { "ext": { "type": "pop" } },
+        "response": {
+          "render": "rawURL"
+        }
       }
     ]
   }
