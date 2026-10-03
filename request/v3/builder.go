@@ -413,7 +413,7 @@ func uopenrtbOpenrtbV3DeviceFrom(d *udetect.Device, geo *udetect.Geo) *openrtb.D
 		JS:           int(browser.JS),
 		GeoFetch:     0,
 		FlashVersion: browser.FlashVer,
-		Language:     browser.PrimaryLanguage,
+		Language:     udetect.LanguageISO2(browser.PrimaryLanguage),
 		Carrier:      carrier.Name,
 		MCCMNC:       "",
 		ConnType:     openrtb.ConnType(d.ConnType),
