@@ -1,8 +1,3 @@
-//
-// @project GeniusRabbit corelib 2017 - 2019, 2025
-// @author Dmitry Ponomarev <demdxx@gmail.com> 2017 - 2019, 2025
-//
-
 // Package direct implements the OpenRTB bid response item for direct (click URL) ad formats.
 // Direct ads deliver a click-through URL rather than full creative markup; the system
 // renders an iframe or redirect wrapper around that URL.

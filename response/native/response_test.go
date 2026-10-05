@@ -165,7 +165,7 @@ func TestNew_TrafficStarsPush_MainAsset(t *testing.T) {
 		pushImpression(), nativePushFormat(), trafficStarsRules())
 	require.NoError(t, err)
 
-	main := item.MainAsset()
+	main := item.MainAsset(types.AdFileAssetAny)
 	require.NotNil(t, main)
 	assert.Equal(t, "https://cdn.tsyndicate.com/images/example.jpeg", main.URL)
 	assert.Equal(t, types.FormatAssetMain, main.Name)

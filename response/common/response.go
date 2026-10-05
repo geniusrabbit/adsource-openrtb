@@ -177,11 +177,11 @@ func (it *BaseBidItem) Assets() admodels.AdFileAssets { return nil }
 
 // MainAsset returns nil for types that carry no file assets.
 // Concrete types that do have assets (native, vast) override this method.
-func (it *BaseBidItem) MainAsset() *admodels.AdFileAsset { return nil }
+func (it *BaseBidItem) MainAsset(types.AdFileAssetType) *admodels.AdFileAsset { return nil }
 
 // MainAssetOf returns the primary file asset matched against the format configuration.
 // Call this from concrete types that maintain their own assets slice.
-func MainAssetOf(format *types.Format, assets admodels.AdFileAssets) *admodels.AdFileAsset {
+func MainAssetOf(format *types.Format, assets admodels.AdFileAssets, assetType types.AdFileAssetType) *admodels.AdFileAsset {
 	if format == nil || format.Config == nil {
 		return nil
 	}
@@ -191,6 +191,9 @@ func MainAssetOf(format *types.Format, assets admodels.AdFileAssets) *admodels.A
 	}
 	for _, asset := range assets {
 		if int(asset.ID) == mainAsset.ID {
+			if assetType != types.AdFileAssetAny && asset.Type != assetType {
+				continue
+			}
 			return asset
 		}
 	}

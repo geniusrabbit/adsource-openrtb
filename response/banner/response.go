@@ -1,8 +1,3 @@
-//
-// @project GeniusRabbit corelib 2017 - 2019, 2025
-// @author Dmitry Ponomarev <demdxx@gmail.com> 2017 - 2019, 2025
-//
-
 // Package banner implements the OpenRTB bid response item for banner ad formats.
 // It handles HTML, iframe, and image banner creatives received from RTB sources,
 // including interstitial XML markup parsing.

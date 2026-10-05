@@ -76,8 +76,8 @@ type ResponseBidItem struct {
 func (it *ResponseBidItem) Assets() admodels.AdFileAssets { return it.assets }
 
 // MainAsset returns the primary file asset matched against the format configuration.
-func (it *ResponseBidItem) MainAsset() *admodels.AdFileAsset {
-	return common.MainAssetOf(it.Format(), it.assets)
+func (it *ResponseBidItem) MainAsset(assetType types.AdFileAssetType) *admodels.AdFileAsset {
+	return common.MainAssetOf(it.Format(), it.assets, assetType)
 }
 
 // New creates a ResponseBidItem for a VAST bid. It decodes and validates the

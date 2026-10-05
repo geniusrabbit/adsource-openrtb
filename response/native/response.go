@@ -136,8 +136,8 @@ func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adty
 func (it *ResponseBidItem) Assets() admodels.AdFileAssets { return it.assets }
 
 // MainAsset returns the primary file asset matched against the format configuration.
-func (it *ResponseBidItem) MainAsset() *admodels.AdFileAsset {
-	return common.MainAssetOf(it.Format(), it.assets)
+func (it *ResponseBidItem) MainAsset(assetType types.AdFileAssetType) *admodels.AdFileAsset {
+	return common.MainAssetOf(it.Format(), it.assets, assetType)
 }
 
 // ContentItemString returns the string value of a named content field.
