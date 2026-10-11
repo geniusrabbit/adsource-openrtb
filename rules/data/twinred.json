@@ -27,6 +27,7 @@
     {
       "condition": {
         "formats": [
+          "proxy",
           "proxy_300x250",
           "proxy_300x100",
           "proxy_728x90",
@@ -64,6 +65,7 @@
         "objects": ["banner"]
       },
       "formats": [
+        "proxy",
         "proxy_300x250",
         "proxy_300x100",
         "proxy_728x90",

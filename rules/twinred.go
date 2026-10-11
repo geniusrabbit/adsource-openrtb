@@ -24,7 +24,7 @@ var twinred = &rtbrules.RTBRules{
 	SSPRules: []*rtbrules.RuleItem{
 		{
 			Condition: rtbrules.Condition{
-				Formats:      []string{"proxy_300x250", "proxy_300x100", "proxy_728x90", "banner_300x250", "banner_300x100", "banner_728x90"},
+				Formats:      []string{"proxy", "proxy_300x250", "proxy_300x100", "proxy_728x90", "banner_300x250", "banner_300x100", "banner_728x90"},
 				Interstitial: rtbrules.Exclude,
 				Push:         rtbrules.Exclude,
 			},
@@ -66,7 +66,7 @@ var twinred = &rtbrules.RTBRules{
 				Push:         rtbrules.Exclude,
 				Objects:      []string{"banner"},
 			},
-			Formats: []string{"proxy_300x250", "proxy_300x100", "proxy_728x90", "banner_300x250", "banner_300x100", "banner_728x90"},
+			Formats: []string{"proxy", "proxy_300x250", "proxy_300x100", "proxy_728x90", "banner_300x250", "banner_300x100", "banner_728x90"},
 		},
 		{
 			Condition: rtbrules.Condition{
