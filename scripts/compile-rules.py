@@ -122,6 +122,8 @@ def gen_condition(cond: dict, indent: int) -> str:
         parts.append(f"{inner}Push: {go_aplicable(cond['push'])},")
     if cond.get("objects"):
         parts.append(f"{inner}Objects: {go_string_slice(cond['objects'])},")
+    if cond.get("no_request_object"):
+        parts.append(f"{inner}NoRequestObject: true,")
 
     if not parts:
         return "rtbrules.Condition{}"
@@ -202,6 +204,9 @@ def gen_rule_item(rule: dict, indent: int) -> str:
 
     if resp := gen_response(rule.get("response") or {}, indent + 1):
         lines.append(f"{inner}Response: {resp},")
+
+    if rule.get("reset"):
+        lines.append(f"{inner}Reset: {go_string_slice(rule['reset'])},")
 
     lines.append(f"{tab}}},")
     return "\n".join(lines)

@@ -12,7 +12,7 @@ import (
 // helpers
 // ---------------------------------------------------------------------------
 
-func fmt(codename string) *types.Format { return &types.Format{Codename: codename} }
+func format(codename string) *types.Format { return &types.Format{Codename: codename} }
 
 func imp(intr, push bool) *adtype.Impression {
 	return &adtype.Impression{Interstitial: intr, Push: push}
@@ -29,7 +29,7 @@ func (s *stubTarget) SetExt(ext map[string]any) { s.ext = ext }
 
 func TestCondition_Matches_Nil(t *testing.T) {
 	var c *Condition
-	if c.Matches(fmt("banner"), false, false) {
+	if c.Matches(format("banner"), false, false) {
 		t.Fatal("nil condition should not match")
 	}
 }
@@ -39,7 +39,7 @@ func TestCondition_Matches_EmptyConditionMatchesAll(t *testing.T) {
 	for _, tc := range []struct{ intr, push bool }{
 		{false, false}, {true, false}, {false, true}, {true, true},
 	} {
-		if !c.Matches(fmt("native"), tc.intr, tc.push) {
+		if !c.Matches(format("native"), tc.intr, tc.push) {
 			t.Errorf("empty condition must match intr=%v push=%v", tc.intr, tc.push)
 		}
 	}
@@ -47,21 +47,21 @@ func TestCondition_Matches_EmptyConditionMatchesAll(t *testing.T) {
 
 func TestCondition_Matches_FormatFilter(t *testing.T) {
 	c := &Condition{Formats: []string{"native", "banner"}}
-	if !c.Matches(fmt("native"), false, false) {
+	if !c.Matches(format("native"), false, false) {
 		t.Error("native should match")
 	}
-	if !c.Matches(fmt("banner"), false, false) {
+	if !c.Matches(format("banner"), false, false) {
 		t.Error("banner should match")
 	}
-	if c.Matches(fmt("video"), false, false) {
+	if c.Matches(format("video"), false, false) {
 		t.Error("video should not match")
 	}
 
 	cStar := &Condition{Formats: []string{"*"}}
-	if !cStar.Matches(fmt("direct"), false, false) {
+	if !cStar.Matches(format("direct"), false, false) {
 		t.Error(`condition formats ["*"] should match direct`)
 	}
-	if !cStar.Matches(fmt("native"), false, false) {
+	if !cStar.Matches(format("native"), false, false) {
 		t.Error(`condition formats ["*"] should match native`)
 	}
 }
@@ -81,7 +81,7 @@ func TestCondition_Matches_Interstitial(t *testing.T) {
 	}
 	for _, tc := range tests {
 		c := &Condition{Interstitial: tc.flag}
-		got := c.Matches(fmt("banner"), tc.isIntr, false)
+		got := c.Matches(format("banner"), tc.isIntr, false)
 		if got != tc.want {
 			t.Errorf("Interstitial=%v isIntr=%v: got %v want %v", tc.flag, tc.isIntr, got, tc.want)
 		}
@@ -103,7 +103,7 @@ func TestCondition_Matches_Push(t *testing.T) {
 	}
 	for _, tc := range tests {
 		c := &Condition{Push: tc.flag}
-		got := c.Matches(fmt("banner"), false, tc.isPush)
+		got := c.Matches(format("banner"), false, tc.isPush)
 		if got != tc.want {
 			t.Errorf("Push=%v isPush=%v: got %v want %v", tc.flag, tc.isPush, got, tc.want)
 		}
@@ -116,51 +116,51 @@ func TestCondition_Matches_Push(t *testing.T) {
 
 func TestRTBRules_IsFormatSupport(t *testing.T) {
 	r := &RTBRules{Formats: []string{"banner", "native"}}
-	if !r.IsFormatSupport(fmt("banner")) {
+	if !r.IsFormatSupport(format("banner")) {
 		t.Error("banner should be supported")
 	}
-	if r.IsFormatSupport(fmt("video")) {
+	if r.IsFormatSupport(format("video")) {
 		t.Error("video should not be supported")
 	}
 
 	// Empty Formats → no restriction, all formats accepted.
 	rAll := &RTBRules{}
-	if !rAll.IsFormatSupport(fmt("anything")) {
+	if !rAll.IsFormatSupport(format("anything")) {
 		t.Error("empty formats list: all formats should be accepted")
 	}
 
 	// "*" → all formats accepted.
 	rStar := &RTBRules{Formats: []string{"*"}}
-	if !rStar.IsFormatSupport(fmt("direct")) {
+	if !rStar.IsFormatSupport(format("direct")) {
 		t.Error(`formats ["*"]: direct should be accepted`)
 	}
-	if !rStar.IsFormatSupport(fmt("banner_300x250")) {
+	if !rStar.IsFormatSupport(format("banner_300x250")) {
 		t.Error(`formats ["*"]: banner_300x250 should be accepted`)
 	}
 }
 
 func TestRTBRules_IsInterstitialSupport(t *testing.T) {
 	r := &RTBRules{InterstitialFormats: []string{"proxy"}}
-	if !r.IsInterstitialSupport(fmt("proxy")) {
+	if !r.IsInterstitialSupport(format("proxy")) {
 		t.Error("proxy interstitial should be supported")
 	}
-	if r.IsInterstitialSupport(fmt("banner")) {
+	if r.IsInterstitialSupport(format("banner")) {
 		t.Error("banner interstitial should not be supported")
 	}
 
 	// Empty InterstitialFormats → not supported (no explicit list).
 	rEmpty := &RTBRules{}
-	if rEmpty.IsInterstitialSupport(fmt("proxy")) {
+	if rEmpty.IsInterstitialSupport(format("proxy")) {
 		t.Error("empty interstitial_formats: should not be supported")
 	}
 }
 
 func TestRTBRules_IsPushSupport(t *testing.T) {
 	r := &RTBRules{PushFormats: []string{"native"}}
-	if !r.IsPushSupport(fmt("native")) {
+	if !r.IsPushSupport(format("native")) {
 		t.Error("native push should be supported")
 	}
-	if r.IsPushSupport(fmt("banner")) {
+	if r.IsPushSupport(format("banner")) {
 		t.Error("banner push should not be supported")
 	}
 }
@@ -184,7 +184,7 @@ func TestRTBRules_AdjustImpression_MatchingRule(t *testing.T) {
 	}
 
 	target := &stubTarget{}
-	if err := r.AdjustImpression(target, imp(false, true), fmt("native")); err != nil {
+	if err := r.AdjustImpression(target, imp(false, true), format("native")); err != nil {
 		t.Fatal(err)
 	}
 	if target.ext == nil {
@@ -207,7 +207,7 @@ func TestRTBRules_AdjustImpression_NoMatch(t *testing.T) {
 
 	target := &stubTarget{}
 	// push=false → condition Push:Include won't match
-	if err := r.AdjustImpression(target, imp(false, false), fmt("native")); err != nil {
+	if err := r.AdjustImpression(target, imp(false, false), format("native")); err != nil {
 		t.Fatal(err)
 	}
 	if target.ext != nil {
@@ -235,7 +235,7 @@ func TestRTBRules_DirectionalLists(t *testing.T) {
 		t.Fatalf("detect: %+v", got)
 	}
 	target := &stubTarget{}
-	if err := r.AdjustImpression(target, imp(false, false), fmt("direct")); err != nil {
+	if err := r.AdjustImpression(target, imp(false, false), format("direct")); err != nil {
 		t.Fatal(err)
 	}
 	if target.ext["type"] != "pop" {

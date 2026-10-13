@@ -29,7 +29,8 @@ type Detection struct {
 // the interstitial and object checks.
 //
 // Interstitial Exclude + instl skips the rule. Push and Interstitial Include
-// are outputs. No match returns nil.
+// are outputs. reset "instl" forces Interstitial false after that calculation.
+// No match returns nil.
 func (r *RTBRules) Detect(sig RequestSignal) *Detection {
 	if r == nil {
 		return nil
@@ -44,6 +45,9 @@ func (r *RTBRules) Detect(sig RequestSignal) *Detection {
 		if !objectMatch(rule.Condition.Objects, sig) {
 			continue
 		}
+		// if rule.Config.NoRequestObject == sig.HasBanner || sig.HasNative || sig.HasVideo {
+		// 	continue
+		// }
 		if rule.Condition.Interstitial == Exclude && sig.Instl {
 			continue
 		}

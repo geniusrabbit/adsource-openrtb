@@ -1,0 +1,32 @@
+{
+    "meta": {
+      "title": "AdPulsar",
+      "description": "AdPulsar RTB rules",
+      "version": "1.0.0",
+      "modified_at": "2026-10-13T00:00:00Z"
+    },
+    "formats": ["*"],
+    "ssp_rules": [
+      {
+        "condition": {
+          "formats": ["direct"],
+          "interstitial": "include",
+          "push": "exclude"
+        }
+      }
+    ],
+    "dsp_rules": [
+      {
+        "condition": {
+          "interstitial": "include",
+          "push": "exclude",
+          "objects": ["interstitial"]
+        },
+        "formats": ["direct"],
+        "reset": [ "instl" ],
+        "response": {
+          "render": "rawURL"
+        }
+      }
+    ]
+  }

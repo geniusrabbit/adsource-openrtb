@@ -86,6 +86,50 @@ func TestRTBRules_Detect_InterstitialExcludeSkips(t *testing.T) {
 	}
 }
 
+func TestRTBRules_Detect_ResetInstl(t *testing.T) {
+	r := &RTBRules{
+		DSPRules: []*RuleItem{
+			{
+				Condition: Condition{Interstitial: Include, Push: Exclude},
+				Formats:   []string{"direct"},
+				Reset:     []string{"instl"},
+			},
+		},
+	}
+	got := r.Detect(RequestSignal{Instl: true})
+	if got == nil {
+		t.Fatal("expected match")
+	}
+	if !got.Interstitial {
+		t.Fatal("reset instl should set Interstitial")
+	}
+	if len(got.FormatCodes) != 1 || got.FormatCodes[0] != "direct" {
+		t.Fatalf("FormatCodes=%v", got.FormatCodes)
+	}
+}
+
+func TestRTBRules_Detect_ConditionNoRequestObject(t *testing.T) {
+	r := &RTBRules{
+		DSPRules: []*RuleItem{
+			{
+				Condition: Condition{Interstitial: Include},
+				Formats:   []string{"direct"},
+				Config:    RuleConfig{NoRequestObject: true},
+			},
+		},
+	}
+	got := r.Detect(RequestSignal{Instl: true})
+	if got == nil {
+		t.Fatal("expected match")
+	}
+	if !got.NoRequestObject {
+		t.Fatal("condition no_request_object should set NoRequestObject")
+	}
+	if len(got.FormatCodes) != 1 || got.FormatCodes[0] != "direct" {
+		t.Fatalf("FormatCodes=%v", got.FormatCodes)
+	}
+}
+
 func TestRTBRules_Detect_PushAndNoRequestObject(t *testing.T) {
 	r := &RTBRules{
 		DSPRules: []*RuleItem{

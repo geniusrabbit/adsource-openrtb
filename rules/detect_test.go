@@ -52,6 +52,14 @@ func TestDetect_TwinRed(t *testing.T) {
 	}
 }
 
+func TestDetect_AdPulsar(t *testing.T) {
+	r := Rules["adpulsar"]
+	got := r.Detect(rtbrules.RequestSignal{Instl: true})
+	if got == nil || got.Interstitial || !got.NoRequestObject || !slices.Equal(got.FormatCodes, []string{"direct"}) {
+		t.Fatalf("adpulsar instl: %+v", got)
+	}
+}
+
 func TestAdjustImpression_TwinRed(t *testing.T) {
 	r := Rules["twinred"]
 	target := &extTarget{}

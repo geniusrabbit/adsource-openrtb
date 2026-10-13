@@ -68,6 +68,8 @@ type RuleItem struct {
 	Config      RuleConfig    `json:"config"`
 	MapResponse *MapResponse  `json:"map_response,omitempty"`
 	Response    *ResponseSpec `json:"response,omitempty"`
+	// Reset names parameters cleared after the rule matches. Known token: "instl".
+	Reset []string `json:"reset,omitempty"`
 }
 
 // RTBRules defines a set of rules for handling OpenRTB requests.
