@@ -299,11 +299,6 @@ func TestDriver_PriceCorrectionReduceFactor(t *testing.T) {
 	assert.InDelta(t, 0.1, d.PriceCorrectionReduceFactor(), 1e-9)
 }
 
-func TestDriver_RequestStrategy(t *testing.T) {
-	d := makeDriver(t, makeSource("openrtb"), &mockHTTPClient{})
-	assert.Equal(t, adtype.AsynchronousRequestStrategy, d.RequestStrategy())
-}
-
 func TestDriver_AccountID_NilAccount(t *testing.T) {
 	d := makeDriver(t, makeSource("openrtb"), &mockHTTPClient{})
 	assert.Equal(t, uint64(0), d.AccountID())

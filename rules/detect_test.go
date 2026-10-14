@@ -28,6 +28,7 @@ func TestByName(t *testing.T) {
 func TestDetect_TwinRed(t *testing.T) {
 	r := Rules["twinred"]
 	wantBanner := []string{
+		"proxy",
 		"proxy_300x250", "proxy_300x100", "proxy_728x90",
 		"banner_300x250", "banner_300x100", "banner_728x90",
 	}
@@ -55,8 +56,11 @@ func TestDetect_TwinRed(t *testing.T) {
 func TestDetect_AdPulsar(t *testing.T) {
 	r := Rules["adpulsar"]
 	got := r.Detect(rtbrules.RequestSignal{Instl: true})
-	if got == nil || got.Interstitial || !got.NoRequestObject || !slices.Equal(got.FormatCodes, []string{"direct"}) {
+	if got == nil || !slices.Equal(got.FormatCodes, []string{"direct"}) {
 		t.Fatalf("adpulsar instl: %+v", got)
+	}
+	if got.Rule == nil || !slices.Contains(got.Rule.Reset, "instl") || got.Rule.Response == nil || got.Rule.Response.Render != "rawURL" {
+		t.Fatalf("adpulsar rule: %+v", got.Rule)
 	}
 }
 

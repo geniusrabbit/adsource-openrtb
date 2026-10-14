@@ -207,11 +207,6 @@ func (d *driver) PriceCorrectionReduceFactor() float64 {
 	return d.source.PriceCorrectionReduceFactor()
 }
 
-// RequestStrategy description
-func (d *driver) RequestStrategy() adtype.RequestStrategy {
-	return adtype.AsynchronousRequestStrategy
-}
-
 // Bid request for standart system filter
 func (d *driver) Bid(request adtype.BidRequester) adtype.Response {
 	beginTime := fasttime.UnixTimestampNano()

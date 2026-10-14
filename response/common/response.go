@@ -66,11 +66,6 @@ func (it *BaseBidItem) Source() adtype.Source {
 	return it.Src
 }
 
-// NetworkName returns the network name for this source (always empty for RTB).
-func (it *BaseBidItem) NetworkName() string {
-	return ""
-}
-
 // AdID returns the system advertisement ID (always empty for RTB).
 func (it *BaseBidItem) AdID() string {
 	return ""
