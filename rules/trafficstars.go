@@ -85,8 +85,9 @@ var trafficstars = &rtbrules.RTBRules{
 		},
 		{
 			Condition: rtbrules.Condition{
-				Interstitial: rtbrules.Exclude,
+				Interstitial: rtbrules.Include,
 				Push:         rtbrules.Exclude,
+				Objects:      []string{"interstitial"},
 			},
 			Formats: []string{"direct"},
 			Config: rtbrules.RuleConfig{
@@ -94,6 +95,10 @@ var trafficstars = &rtbrules.RTBRules{
 					"type": "pop",
 				},
 			},
+			Response: &rtbrules.ResponseSpec{
+				Render: "rawURL",
+			},
+			Reset: []string{"instl"},
 		},
 	},
 }

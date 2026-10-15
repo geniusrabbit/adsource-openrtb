@@ -87,8 +87,8 @@ func TestDetect_TrafficStars(t *testing.T) {
 		t.Fatal("webpush rule should carry MapResponse")
 	}
 
-	pop := r.Detect(rtbrules.RequestSignal{Ext: map[string]any{"type": "pop"}})
-	if pop == nil || !slices.Equal(pop.FormatCodes, []string{"direct"}) {
+	pop := r.Detect(rtbrules.RequestSignal{Instl: true, Ext: map[string]any{"type": "pop"}})
+	if pop == nil || !pop.Interstitial || !slices.Equal(pop.FormatCodes, []string{"direct"}) {
 		t.Fatalf("pop: %+v", pop)
 	}
 }

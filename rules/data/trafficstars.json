@@ -88,11 +88,14 @@
     },
     {
       "condition": {
-        "interstitial": "exclude",
-        "push": "exclude"
+        "interstitial": "include",
+        "push": "exclude",
+        "objects": ["interstitial"]
       },
       "formats": ["direct"],
-      "config": { "ext": { "type": "pop" } }
+      "reset": [ "instl" ],
+      "config": { "ext": { "type": "pop" } },
+      "response": { "render": "rawURL" }
     }
   ]
 }
