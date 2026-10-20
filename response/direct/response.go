@@ -36,18 +36,16 @@ type ResponseBidItem struct {
 func New(req adtype.BidRequester, src adtype.Source, bid *openrtb.Bid, imp *adtype.Impression, format *types.Format) (*ResponseBidItem, error) {
 	cpmPrice := billing.MoneyFloat(bid.Price)
 	bidItem := &ResponseBidItem{
-		BaseBidItem: common.BaseBidItem{
-			ItemID:     bid.ID,
-			Src:        src,
-			Req:        req,
-			Imp:        imp,
-			Bid:        bid,
-			FormatType: types.FormatDirectType,
-			RespFormat: format,
-			PriceScope: prices.PriceScope{
-				CPMScope: prices.CPMScope{MaxBidCPM: cpmPrice, BidCPM: cpmPrice},
-				ECPM:     cpmPrice,
-			},
+		ItemID:     bid.ID,
+		Src:        src,
+		Req:        req,
+		Imp:        imp,
+		Bid:        bid,
+		FormatType: types.FormatDirectType,
+		RespFormat: format,
+		PriceScope: prices.PriceScope{
+			CPMScope: prices.CPMScope{MaxBidCPM: cpmPrice, BidCPM: cpmPrice},
+			ECPM:     cpmPrice,
 		},
 	}
 
