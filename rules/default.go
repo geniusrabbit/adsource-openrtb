@@ -33,8 +33,9 @@ var defaultRules = &rtbrules.RTBRules{
 	DSPRules: []*rtbrules.RuleItem{
 		{
 			Condition: rtbrules.Condition{
-				Interstitial: rtbrules.Exclude,
+				Interstitial: rtbrules.Include,
 				Push:         rtbrules.Exclude,
+				Objects:      []string{"interstitial"},
 			},
 			Formats: []string{"direct"},
 			Config: rtbrules.RuleConfig{
@@ -45,6 +46,7 @@ var defaultRules = &rtbrules.RTBRules{
 			Response: &rtbrules.ResponseSpec{
 				Render: "rawURL",
 			},
+			Reset: []string{"instl"},
 		},
 	},
 }
