@@ -95,7 +95,7 @@ func TestDetect_TrafficStars(t *testing.T) {
 
 func TestDetect_DefaultPop(t *testing.T) {
 	r := Rules["default"]
-	got := r.Detect(rtbrules.RequestSignal{Ext: map[string]any{"type": "pop"}})
+	got := r.Detect(rtbrules.RequestSignal{Instl: true, Ext: map[string]any{"type": "pop"}})
 	if got == nil || !slices.Equal(got.FormatCodes, []string{"direct"}) {
 		t.Fatalf("default pop: %+v", got)
 	}
