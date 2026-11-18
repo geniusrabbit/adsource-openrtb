@@ -19,13 +19,12 @@
     "dsp_rules": [
       {
         "condition": {
-          "interstitial": "include",
-          "push": "exclude",
-          "objects": ["interstitial"]
+          "interstitial": "exclude",
+          "push": "exclude"
         },
         "formats": ["direct"],
         "reset": [ "instl" ],
-        "config": { "ext": { "type": "pop" } },
+        "config": { "ext": { "type": "pop" }, "no_request_object": true },
         "response": { "render": "rawURL" }
       }
     ]

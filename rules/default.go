@@ -33,15 +33,15 @@ var defaultRules = &rtbrules.RTBRules{
 	DSPRules: []*rtbrules.RuleItem{
 		{
 			Condition: rtbrules.Condition{
-				Interstitial: rtbrules.Include,
+				Interstitial: rtbrules.Exclude,
 				Push:         rtbrules.Exclude,
-				Objects:      []string{"interstitial"},
 			},
 			Formats: []string{"direct"},
 			Config: rtbrules.RuleConfig{
 				Ext: map[string]any{
 					"type": "pop",
 				},
+				NoRequestObject: true,
 			},
 			Response: &rtbrules.ResponseSpec{
 				Render: "rawURL",
